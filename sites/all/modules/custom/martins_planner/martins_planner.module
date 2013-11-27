@@ -164,8 +164,11 @@ function martins_planner_event_type_form($form, &$form_state)
   {
     $event = node_load($nid);
     $url = "/sites/default/files/images/Waterlilies.jpg";
+	$dimgtitle = $dimgdesc = "";
     if (isset($event->field_image['und'])) $url = file_create_url($event->field_image['und'][0]['uri']);
-    $switch .= "case '$event->nid': locimage='$url'; break; \n";
+	if (isset($event->field_default_image_title['und'])) $dimgtitle = $event->field_default_image_title['und'][0]['value'];
+	if (isset($event->field_default_image_description['und'])) $dimgdesc = $event->field_default_image_description['und'][0]['value'];
+    $switch .= "case '$event->nid': locimage='".$url."'; dimgtitle='".addslashes($dimgtitle)."'; dimgdesc='".addslashes($dimgdesc)."';break; \n";
   }
   foreach($commercials as $nid=>$name)
   {
@@ -178,6 +181,8 @@ function martins_planner_event_type_form($form, &$form_state)
   $js = "function swapImage(tid){
     $switch\n
     jQuery('#event-img').attr('src',locimage);
+	jQuery('#dimgdesc').html(dimgdesc);
+	jQuery('#dimgtitle').html(dimgtitle);
   };\n";
   drupal_add_js($js,'inline');  
 

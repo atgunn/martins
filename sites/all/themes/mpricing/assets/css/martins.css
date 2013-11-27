@@ -2831,3 +2831,22 @@ height:16px;
 }*/
 
 .sc{color:#4C4C4C;}
+
+/******* Written by Majid Saleem *******/
+.rightsblock{
+	width: 340px;
+	float: right;
+}
+
+.rightsblock img#event-img{
+	float: left !important;
+}
+
+.rightsblock #dimgtitle{
+	width: 100%;
+	font-weight: bold;
+}
+
+.rightsblock #dimgdesc{
+	width: 100%;
+}
