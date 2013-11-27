@@ -1,0 +1,559 @@
+<?php
+
+/**
+* Implements hook_init()
+*/
+function entry_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function entry_permission()
+{
+  return array(
+    'access entry manager' =>  array(
+      'title' => t('Access Entry Manager'),
+	 		'description' => t('Permission for accessing the entry manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+
+function entry_menu()
+{
+  $items['entry/add'] = array(
+    'title' => 'Add Entry',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('entry_add'),
+    'access arguments' => array('access entry manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['entry/list'] = array(
+    'title' => 'Entry Manager',
+    'page callback' => 'entry_list',
+    'access arguments' => array('access entry manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['entry/edit'] = array(
+    'title' => 'Edit Entry',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('entry_edit'),
+    'access arguments' => array('access entry manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['entry/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'entry_updatestatus',
+    'access arguments' => array('access entry manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['entry/delete'] = array(
+    'title' => 'Delete Entry',
+    'page callback' => 'entry_delete',
+    'access arguments' => array('access entry manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['entry_view'] = array(
+		'title' => 'Entry view',
+		'description' => 'Front end side view',
+		'page callback' => 'entry_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['entry_preview'] = array(
+		'title' => 'Premium Entry view',
+		'description' => 'Front end side view',
+		'page callback' => 'entry_preview',
+		'access callback' => TRUE,
+	);
+	
+	$items['entry/recordadd'] = array(
+		'title' => 'Entry Record Add',
+		'page callback' => 'entry_recordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	$items['entry/prerecordadd'] = array(
+		'title' => 'Pre Entry Record Add',
+		'page callback' => 'entry_prerecordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	return $items;
+}
+
+function entry_prerecordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['preentry'] = $_POST;
+	
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 6;
+	}
+	$_SESSION['step'] = 6;
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('beverage_view');
+	else
+		drupal_goto('event_view');
+			
+}
+
+function entry_recordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['entry'] = $_POST;
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 5;
+		//echo '<pre>'; print_r($_SESSION['entry']); exit;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('entry_preview');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function entry_preview()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 5))
+	{
+		return include('preentry.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 5))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+	
+}
+
+
+function entry_view()
+{	
+		return include('entry.php');
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 4))
+	{
+		return include('entry.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 4))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+	
+}
+
+/*
+** Delete Entry Code
+*/
+function entry_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM entries where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Status of Entry Code
+*/
+function entry_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update entries set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit Entry Form Code
+*/
+function entry_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM entries WHERE id = {$_GET['id']}");
+		$row = array();
+
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	/* ---- Entry Type Value -----
+		0 = Entrees
+		1 = Appetizer,
+		2 = Vegatables,
+		3 = Beverage,	
+	*/
+	
+	$typeValue = array('Entrees','Appetizer','Vegatables','Beverage');
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['type'] = array(
+		'#title' => t('Entry Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $row['type'],
+		'#description' => t('Select entry.'),
+	);
+	
+	$form['entriesName'] = array(
+		'#title' => t('Entry Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['entriesName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the entry'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the entry'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type'  => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current entries.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type'  => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the entry'),
+	);
+	
+	$form['submit'] = array(
+		'#type'  => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Entry Code
+*/
+function entry_edit_submit($form, &$form_state)
+{
+	$type				 = $form_state['values']['type'];
+	$entriesName = $form_state['values']['entriesName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	$id = $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif') 	||
+				($_FILES['files']['type']['image'] == 'image/jpeg')	|| 
+				($_FILES['files']['type']['image'] == 'image/jpg')	|| 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','entry').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE entries SET type={$type}, entriesName='{$entriesName}', price='{$price}',"
+										."image='{$image}',description='{$description}',status={$status},orderno={$orderno} WHERE id ="
+										."{$id}");
+	
+	$form_state['redirect'] = 'entry/list';	
+}
+
+/*
+** Entry List Code
+*/
+function entry_list($arg = 0)
+{
+	$result = db_query('select * from entries order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		if ($record->type == 0)
+			$record->type = 'Entrees';
+		else if ($record->type == 1)
+			$record->type = 'Appetizer';
+		else if ($record->type == 2)
+			$record->type = 'Vegatables';
+		else if ($record->type == 2)
+			$record->type = 'Beverage';
+			
+		$rows[] = array_map('check_plain', (array)$record);
+		$rows[$i]['price'] = '$'.$record->price;
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','entry').'/images/active.png',
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'entry/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','entry').'/images/inactive.png',
+							'alt' => 'Inactive image',
+							'title' => 'Inactive',
+						)
+					),
+					'entry/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit']		= l('Edit', 'entry/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'entry/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array( 
+			t('Id'),
+			t('Entry Type'),
+			t('Entry Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'), 
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Entry', 'entry/add');
+}
+
+/*
+** Entry Add Form Code
+*/
+function entry_add($form, &$form_submit)
+{
+	/** ---- Entry Type Value -----
+		0 = Entrees
+		1 = Appetizer,
+		2 = Vegatables,
+		3 = Beverage,	
+	**/
+	
+	$typeValue = array('Entrees','Appetizer','Vegatables','Beverage');
+	
+	$form['type'] = array(
+		'#title' => t('Entry Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $typeValue[0],
+		'#description' => t('Select entry.'),
+	);
+	
+	$form['entriesName'] = array(
+		'#title' => t('Entry Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the entry'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Price of the entry'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Entry Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current entry.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the entry'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Entry Add Code
+*/
+function entry_add_submit($form, &$form_state)
+{
+	$type 			 = $form_state['values']['type'];
+	$entriesName = $form_state['values']['entriesName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png'))
+		{
+			$image = drupal_get_path('module','entry').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO entries(type,entriesName,price,image,description,status,orderno) VALUES( {$type},"
+										."'{$entriesName}', '{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'entry/list';	
+}

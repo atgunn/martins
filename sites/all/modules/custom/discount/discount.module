@@ -1,0 +1,529 @@
+<?php
+session_start(); 
+
+/**
+* Implements hook_init()
+*/
+function discount_init()
+{
+}
+
+/**
+* Implements hook_permission()
+*/
+function discount_permission()
+{
+  return array(
+    'access discount manager' =>  array(
+      'title' => t('Access Discount Manager'),
+	 		'description' => t('Permission for accessing the discount manager module.'),
+    ),
+  );
+}
+
+
+/**
+* Implements hook_menu()
+*/
+function discount_menu()
+{
+  $items['discount/add'] = array(
+    'title' => 'Add Discount',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('discount_add'),
+    'access arguments' => array('access discount manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['discount/list'] = array(
+    'title' => 'Discount Manager',
+    'page callback' => 'discount_list',
+    'access arguments' => array('access discount manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['discount/edit'] = array(
+    'title' => 'Edit Discount',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('discount_edit'),
+    'access arguments' => array('access discount manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['discount/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'discount_updatestatus',
+    'access arguments' => array('access discount manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['discount/delete'] = array(
+    'title' => 'Delete Discount',
+    'page callback' => 'discount_delete',
+    'access arguments' => array('access discount manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['discount_view'] = array(
+		'title' => 'Discount view',
+		'description' => 'Front end side view',
+		'page callback' => 'discount_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['download_complete_list'] = array(
+		'title' => 'Download List',
+		'description' => 'Front end side view',
+		'page callback' => 'download_complete_list',
+		'access callback' => TRUE,
+	);
+	
+	$items['download_30_list'] = array(
+		'title' => 'Download List',
+		'description' => 'Front end side view',
+		'page callback' => 'download_30_list',
+		'access callback' => TRUE,
+	);
+	
+	return $items;
+}
+
+function download_30_list()
+{	
+	$result = db_query("select discountName,discountMonth,Sunday_thru_friday,Saturday_am,Saturday_pm,description from discount where status = 1 and (Sunday_thru_friday='30%' or Saturday_am='30%' or Saturday_pm='30%') order by orderno");
+  $rows = array();
+	
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+	}
+	$header = array(t('Discount Name'),t('Discount Month'), t('Sunday to Friday'), t('Saturday AM'),t('Saturday PM'),t('Description'));
+	$output = theme('format_csv', array('header' => $header,'rows' => $rows));
+	
+	header("Pragma: public");
+	header("Expires: 0");
+	header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+	
+	header("Content-Type: application/octet-stream");
+	header("Content-Disposition: attachment; filename=complete_30_percentage_list.csv");
+	header("Content-Transfer-Encoding: binary");
+	//header("Content-Length: ".$fsize);
+	echo  $output;
+}
+
+
+function download_complete_list()
+{	
+	$result = db_query('select discountName,discountMonth,Sunday_thru_friday,Saturday_am,Saturday_pm,description from discount where status = 1 order by orderno');
+  $rows = array();
+	
+	foreach ($result as $record) 
+	{ 
+	//	echo '<pre>'; print_r($record); exit;
+		$rows[] = array_map('check_plain', (array)$record);
+	}
+	$header = array(t('Discount Name'),t('Discount Month'), t('Sunday to Friday'), t('Saturday AM'),t('Saturday PM'),t('Description'));
+	$output = theme('format_csv', array('header' => $header,'rows' => $rows));
+	
+	header("Pragma: public");
+	header("Expires: 0");
+	header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+	
+	header("Content-Type: application/octet-stream");
+	header("Content-Disposition: attachment; filename=complete_list.csv");
+	header("Content-Transfer-Encoding: binary");
+	//header("Content-Length: ".$fsize);
+	
+	echo  $output;
+	
+}
+
+function discount_view()
+{	
+		return include('discount.php');
+	if (isset($_SESSION['step']) && $_SESSION['step'] == 2)
+	{
+		$_SESSION['step'] = 3;
+		return include('discount.php');
+	}
+	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 3))
+	{
+		return include('discount.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 3))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+/*
+**  Delete Discount entry Code
+*/
+function discount_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM discount where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+**  Update Status of Discount Code
+*/
+function discount_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update discount set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+**  Edit Discount Form Code
+*/
+function discount_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM discount WHERE id = {$_GET['id']}");
+		$row = array();
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['discountName'] = array(
+		'#title' => t('Discount Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['discountName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the discount'),
+	);
+	
+	$form['discountMonth'] = array(
+		'#title' => t('Discount Month'),
+		'#type' => 'textfield',
+		'#default_value' => $row['discountMonth'],
+		'#required' => TRUE,
+		'#description' => t('Month Name For the discount'),
+	);
+	
+	$form['Sunday_thru_friday'] = array(
+		'#title' => t('Sunday to Friday'),
+		'#type' => 'textfield',
+		'#default_value' => $row['Sunday_thru_friday'],
+		'#required' => TRUE,
+		'#description' => t('Discount Value for Sunday to Friday'),
+	);
+	
+	$form['Saturday_am'] = array(
+		'#title' => t('Saturday AM'),
+		'#type' => 'textfield',
+		'#default_value' => $row['Saturday_am'],
+		'#required' => TRUE,
+		'#description' => t('Discount For Saturday AM'),
+	);
+	
+	$form['Saturday_pm'] = array(
+		'#title' => t('Saturday PM'),
+		'#type' => 'textfield',
+		'#default_value' => $row['Saturday_pm'],
+		'#required' => TRUE,
+		'#description' => t('Discount For Saturday PM'),
+	);
+		
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+		
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Discount Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Discount.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the discount'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+
+/*
+**  Edit Discount Code
+*/
+function discount_edit_submit($form, &$form_state)
+{
+	$discountName 			= $form_state['values']['discountName'];
+	$discountMonth			= $form_state['values']['discountMonth'];
+	$Sunday_thru_friday = $form_state['values']['Sunday_thru_friday'];
+	$Saturday_am 				= $form_state['values']['Saturday_am'];
+	$Saturday_pm 				= $form_state['values']['Saturday_pm'];
+	$image 							= $form_state['values']['image'];
+	$description 				= $form_state['values']['description'];
+	$status 						= $form_state['values']['status'];
+	$orderno 						= $form_state['values']['orderno'];
+	$id 								= $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif') 	||
+				($_FILES['files']['type']['image'] == 'image/jpeg')	|| 
+				($_FILES['files']['type']['image'] == 'image/jpg')	|| 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png'	))
+		{
+			$image = drupal_get_path('module','location').'/images/'.$_FILES['files']["name"]['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE discount SET discountName='{$discountName}',discountMonth='{$discountMonth}',Sunday_thru_friday='"
+										."{$Sunday_thru_friday}',Saturday_am='{$Saturday_am}',Saturday_pm='{$Saturday_pm}',image='{$image}',description="
+										."'{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+	$form_state['redirect'] = 'discount/list';	
+}
+
+
+/*
+**  List Discount Entry Code
+*/
+function discount_list($arg = 0)
+{
+	$result = db_query('select * from discount order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','discount').'/images/active.png',
+							'alt' => 'Active image',
+							'title' => 'Active',
+						)
+					),
+					'discount/updatestatus',
+					array(
+						'html' => TRUE,
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','discount').'/images/inactive.png',
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'discount/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+			
+		$rows[$i]['edit'] = l('Edit', 'discount/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'discount/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(t('Id'), t('Discount Name'),t('Discount Month'), t('Sunday to Friday'), t('Saturday AM'),t('Saturday PM'),t('Image'),t('Description'),t('Status'), t('Order'),t('Date'),t('Edit'),t('Delete'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Discount', 'discount/add');
+}
+
+/*
+**  Add Discount Form Code
+*/
+function discount_add($form, &$form_submit)
+{
+	$form['discountName'] = array(
+		'#title' => t('Discount Name'),
+		'#type' => 'textfield',
+		//'#required' => TRUE,
+		'#description' => t('Name of the discount'),
+	);
+	
+	$form['discountMonth'] = array(
+		'#title' => t('Discount Month'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Month Name For the discount'),
+	);
+	
+	$form['Sunday_thru_friday'] = array(
+		'#title' => t('Sunday to Friday'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Discount Value for Sunday to Friday'),
+	);
+	
+	$form['Saturday_am'] = array(
+		'#title' => t('Saturday AM'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Discount For Saturday AM'),
+	);
+	
+	$form['Saturday_pm'] = array(
+		'#title' => t('Saturday PM'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Discount For Saturday PM'),
+	);
+
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Discount Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current discount.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the discount'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	//kpr($form);
+	return $form;
+}
+
+
+
+/*
+**  Add Discount Code
+*/
+function discount_add_submit($form, &$form_state)
+{
+	$discountName				= $form_state['values']['discountName'];
+	$discountMonth			= $form_state['values']['discountMonth'];
+	$Sunday_thru_friday = $form_state['values']['Sunday_thru_friday'];
+	$Saturday_am 				= $form_state['values']['Saturday_am'];
+	$Saturday_pm 				= $form_state['values']['Saturday_pm'];
+	$image 							= $form_state['values']['image'];
+	$description 				= $form_state['values']['description'];
+	$status 						= $form_state['values']['status'];
+	$orderno 						= $form_state['values']['orderno'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif') 	||
+				($_FILES['files']['type']['image'] == 'image/jpeg')	|| 
+				($_FILES['files']['type']['image'] == 'image/jpg')	|| 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png'	))
+		{
+			$image = drupal_get_path('module','discount').'/images/'.$_FILES['files']["name"]['image'];
+ 			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO discount(discountName,discountMonth,Sunday_thru_friday,Saturday_am,Saturday_pm,image,"
+										."description,status,orderno) VALUES( '{$discountName}','{$discountMonth}','{$Sunday_thru_friday}',"
+										."'{$Saturday_am}','{$Saturday_pm}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'discount/list';	
+}
+
+

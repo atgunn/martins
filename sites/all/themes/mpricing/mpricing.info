@@ -1,0 +1,20 @@
+name = Martins Pricing
+description = Framework is a blank canvas for theme developers. Use Framework as a starting point to facilitate your theme development.
+core = 7.x
+engine = phptemplate
+stylesheets[all][] = assets/css/normalize.css
+stylesheets[all][] = assets/css/martins.css
+stylesheets[all][] = assets/css/form.css
+stylesheets[all][] = assets/css/custom-theme/jquery-ui-1.10.3.custom.css
+scripts[] = assets/js/modernizr-2.6.2-respond-1.1.0.min.js
+scripts[] = assets/js/plugins.js
+scripts[] = assets/js/app.js
+
+regions[header]         = Header
+regions[navigation]     = Navigation
+regions[highlighted]    = Highlighted
+regions[help]           = Help
+regions[content]        = Content
+regions[sidebar_first]  = First Sidebar
+regions[sidebar_second] = Second Sidebar
+regions[footer]         = Footer

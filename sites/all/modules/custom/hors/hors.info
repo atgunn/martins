@@ -1,0 +1,6 @@
+name = Hors Manager
+description = This module For Hors Manager
+package = Developer
+core = 7.x
+version = 7.x
+files[] = images/active.png

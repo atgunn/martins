@@ -1,0 +1,546 @@
+<?php
+/**
+* Implements hook_init()
+*/
+function beverage_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function beverage_permission()
+{
+  return array(
+    'access beverage manager' =>  array(
+      'title' => t('Access Beverage Manager'),
+	 		'description' => t('Permission for accessing the beverage manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+function beverage_menu()
+{
+  $items['beverage/add'] = array(
+    'title' => 'Add Beverage',
+    'page callback' => 'drupal_get_form',
+	'page arguments' => array('beverage_add'),
+    'access arguments' => array('access beverage manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['beverage/list'] = array(
+    'title' => 'Beverage Manager',
+    'page callback' => 'beverage_list',
+    'access arguments' => array('access beverage manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['beverage/edit'] = array(
+    'title' => 'Edit Beverage',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('beverage_edit'),
+    'access arguments' => array('access beverage manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['beverage/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'beverage_updatestatus',
+    'access arguments' => array('access beverage manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['beverage/delete'] = array(
+    'title' => 'Delete Beverage',
+    'page callback' => 'beverage_delete',
+    'access arguments' => array('access beverage manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['beverage_view'] = array(
+		'title' => 'Beverage view',
+		'description' => 'Front end side view',
+		'page callback' => 'beverage_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['beverage_nextview'] = array(
+		'title' => 'Beverage view',
+		'description' => 'Front end side view',
+		'page callback' => 'beverage_nextview',
+		'access callback' => TRUE,
+	);
+	
+	$items['beverage/recordadd'] = array(
+		'title' => 'Beverage Record Add',
+		'page callback' => 'beverage_recordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	$items['beverage/prerecordadd'] = array(
+		'title' => 'Pre Beverage Record Add',
+		'page callback' => 'beverage_prerecordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	return $items;
+}
+
+function beverage_prerecordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['prebeverage'] = $_POST;
+	}
+	
+	if (isset($_SESSION['step']))
+		$_SESSION['step'] = 8;
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('hors_view');
+	else
+		drupal_goto('event_view');
+}
+
+function beverage_recordadd()
+{	
+	if ($_POST)
+	{	
+		$_SESSION['beverage'] = $_POST;
+	}
+
+	if (isset($_SESSION['step']))
+		$_SESSION['step'] = 7;
+				
+	if (isset($_SESSION['step']))
+		drupal_goto('beverage_nextview');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function beverage_nextview()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 7))
+	{
+		return include('nextbeverage.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 7))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+function beverage_view()
+{	
+		return include('beverage.php');
+			if (isset($_SESSION['step']) && ($_SESSION['step'] >= 6))
+	{
+		return include('beverage.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 6))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('beverage_nextview');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+	
+	
+}
+
+/*
+** Delete Beverage Code
+*/
+function beverage_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM beverage where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Beverage Status Code
+*/
+function beverage_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update beverage set status = !status where id={$_GET['id']}");
+		
+	header('Location: list');
+}
+
+/*
+** Edit Beverage Form Code
+*/
+function beverage_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM beverage WHERE id = {$_GET['id']}");
+		$row = array();
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	$typeValue = array('Opean Bar'=>'Opean Bar','Beer/Wine/Soda'=>'Beer/Wine/Soda','Soda Bar'=>'Soda Bar');
+	
+	$form['type'] = array(
+		'#title' => t('Beverage Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $row['type'],
+		'#description' => t('Select parent page for the current one.'),
+	);
+	
+	$form['beverageName'] = array(
+		'#title' => t('Beverage Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['beverageName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the Beverage'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Beverage.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Beverage'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Beverage Code
+*/
+function beverage_edit_submit($form, &$form_state)
+{
+	$type			= $form_state['values']['type'];
+	$beverageName 	= $form_state['values']['beverageName'];
+	$price 			= $form_state['values']['price'];
+	$image 			= $form_state['values']['image'];
+	$description 	= $form_state['values']['description'];
+	$status 		= $form_state['values']['status'];
+	$orderno 		= $form_state['values']['orderno'];
+	$id 			= $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+	{
+		echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+	}
+	else
+	{
+		if (($_FILES['files']['type']['image']  == 'image/gif')	 ||
+			($_FILES['files']['type']['image']  == 'image/jpeg') || 
+			($_FILES['files']['type']['image'] 	== 'image/jpg')  || 
+			($_FILES['files']['type']['image'] 	== 'image/pjpeg')||
+			($_FILES['files']['type']['image'] 	== 'image/x-png')||
+			($_FILES['files']['type']['image'] 	== 'image/png' ))
+		{
+			$image = drupal_get_path('module','beverage').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE beverage SET type='{$type}',beverageName='{$beverageName}',price='{$price}' ,image='"
+ 					  ."{$image}',description='{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+
+	$form_state['redirect'] = 'beverage/list';	
+}
+
+
+/*
+** Beverage List Code
+*/
+function beverage_list($arg = 0)
+{
+	$result = db_query('select * from beverage order by orderno');
+    $rows = array();
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','beverage').'/images/active.png', 
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'beverage/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','beverage').'/images/inactive.png', 
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'beverage/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit'] = l('Edit', 'beverage/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'beverage/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(
+			t('Id'),
+			t('Beverage Type'),
+			t('Beverage Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'),
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+	
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Beverage', 'beverage/add');
+}
+
+/*
+** Beverage Add Form Code
+*/
+function beverage_add($form, &$form_submit)
+{
+	$typeValue = array('Opean Bar'=>'Opean Bar','Beer/Wine/Soda'=>'Beer/Wine/Soda','Soda Bar'=>'Soda Bar');
+	
+	$form['type'] = array(
+		'#title' => t('Beverage Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $typeValue['Opean Bar'],
+		'#description' => t('Select parent page for the current one.'),
+	);
+	
+	$form['beverageName'] = array(
+		'#title' => t('Beverage Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the Beverage'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Beverage Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current beverage.'),
+
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Beverage'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Beverage Add Code
+*/
+function beverage_add_submit($form, &$form_state)
+{
+	$type				= $form_state['values']['type'];
+	$beverageName 		= $form_state['values']['beverageName'];
+	$price 			    = $form_state['values']['price'];
+	$image 				= $form_state['values']['image'];
+	$description 	    = $form_state['values']['description'];
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+
+	if ($_FILES['files']['error']['image'] > 0)
+	{
+		echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+	}
+	else
+	{
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+			($_FILES['files']['type']['image'] == 'image/jpeg') || 
+			($_FILES['files']['type']['image'] == 'image/jpg')  || 
+			($_FILES['files']['type']['image'] == 'image/pjpeg')||
+			($_FILES['files']['type']['image'] == 'image/x-png')||
+			($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','beverage').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO beverage(type,beverageName,price,image,description,status,orderno) VALUES('{$type}"
+	 				."','{$beverageName}','{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'beverage/list';	
+}

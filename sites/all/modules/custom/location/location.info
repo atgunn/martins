@@ -1,0 +1,6 @@
+name = Location Manager
+description = This module For Location Manager
+package = Developer
+core = 7.x
+version = 7.x
+files[] = images/active.png

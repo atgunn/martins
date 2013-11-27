@@ -1,0 +1,6 @@
+name = Beverage Manager
+description = This module For Beverage Manager
+package = Developer
+core = 7.x
+version = 7.x
+files[] = images/active.png

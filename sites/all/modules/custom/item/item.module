@@ -1,0 +1,511 @@
+<?php
+
+/**
+* Implements hook_init()
+*/
+function item_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function item_permission()
+{
+  return array(
+    'access item manager' =>  array(
+      'title' => t('Access Item Manager'),
+	 		'description' => t('Permission for accessing the item manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+
+function item_menu()
+{
+  $items['item/add'] = array(
+    'title' => 'Add Item',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('item_add'),
+    'access arguments' => array('access item manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['item/list'] = array(
+    'title' => 'Item Manager',
+    'page callback' => 'item_list',
+    'access arguments' => array('access item manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['item/edit'] = array(
+    'title' => 'Edit Item',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('item_edit'),
+    'access arguments' => array('access item manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['item/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'item_updatestatus',
+    'access arguments' => array('access item manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['item/delete'] = array(
+    'title' => 'Delete Item',
+    'page callback' => 'item_delete',
+    'access arguments' => array('access item manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['item_view'] = array(
+		'title' => 'Option view',
+		'description' => 'Front end side view',
+		'page callback' => 'item_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['item/recordadd'] = array(
+		'title' => 'Item Record Add',
+		'page callback' => 'item_recordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	return $items;
+}
+
+function item_recordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['option'] = $_POST;
+		
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 11;
+		//echo '<pre>'; print_r($_SESSION['option']); exit;
+	}
+	else
+	{
+		unset($_SESSION['option']);
+	}
+	if (isset($_SESSION['step']))
+		drupal_goto('cake_view');
+	else
+		drupal_goto('event_view');
+	
+}
+
+
+function item_view()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 10))
+	{
+		return include('item.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 10))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+			
+			case 7:
+				drupal_goto('beverage_nextview');
+			break;
+			
+			case 8:
+				drupal_goto('hors_view');
+			break;
+			
+			case 9:
+				drupal_goto('display_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+	
+}
+
+/*
+** Delete Item Code
+*/
+function item_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM item where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Status of Item Code
+*/
+function item_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update item set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit Item Form Code
+*/
+function item_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM item WHERE id = {$_GET['id']}");
+		$row = array();
+
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	/* ---- Item Type Value -----
+		0 = Vegetarian,
+		1 = Non-Vegetarian,
+	*/
+	
+	$typeValue = array('Vegetarian','Non-Vegetarian');
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['type'] = array(
+		'#title' => t('Item Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $row['type'],
+		'#description' => t('Select item.'),
+	);
+	
+	$form['itemName'] = array(
+		'#title' => t('Item Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['itemName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the item'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type'  => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current item.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type'  => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the item'),
+	);
+	
+	$form['submit'] = array(
+		'#type'  => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Item Code
+*/
+function item_edit_submit($form, &$form_state)
+{
+	$type				 = $form_state['values']['type'];
+	$itemName 	 = $form_state['values']['itemName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	$id = $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif') 	||
+				($_FILES['files']['type']['image'] == 'image/jpeg')	|| 
+				($_FILES['files']['type']['image'] == 'image/jpg')	|| 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','item').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE item SET type={$type}, itemName='{$itemName}', price='{$price}',"
+										."image='{$image}',description='{$description}',status={$status},orderno={$orderno} WHERE id ="
+										."{$id}");
+	
+	$form_state['redirect'] = 'item/list';	
+}
+
+/*
+** Item List Code
+*/
+function item_list($arg = 0)
+{
+	$result = db_query('select * from item order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		if ($record->type == 0)
+			$record->type = 'Vegetarian';
+		else if ($record->type == 1)
+			$record->type = 'Non-Vegetarian';
+					
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		$rows[$i]['price'] = '$'.$record->price;
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','item').'/images/active.png',
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'item/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','item').'/images/inactive.png',
+							'alt' => 'Inactive image',
+							'title' => 'Inactive',
+						)
+					),
+					'item/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit']		= l('Edit', 'item/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'item/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array( 
+			t('Id'),
+			t('Item Type'),
+			t('Item Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'), 
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Item', 'item/add');
+}
+
+/*
+** Item Add Form Code
+*/
+function item_add($form, &$form_submit)
+{
+	/* ---- Item Type Value -----
+		0 = Vegetarian,
+		1 = Non-Vegetarian,
+	*/
+	
+	$typeValue = array('Vegetarian','Non-Vegetarian');
+	
+	$form['type'] = array(
+		'#title' => t('Item Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $typeValue[0],
+		'#description' => t('Select item.'),
+	);
+	
+	$form['itemName'] = array(
+		'#title' => t('Item Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the item'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Item Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current item.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the item'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Item Add Code
+*/
+function item_add_submit($form, &$form_state)
+{
+	$type 			 = $form_state['values']['type'];
+	$itemName 	 = $form_state['values']['itemName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png'))
+		{
+			$image = drupal_get_path('module','item').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO item(type,itemName,price,image,description,status,orderno) VALUES( {$type},"
+										."'{$itemName}', '{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'item/list';	
+}

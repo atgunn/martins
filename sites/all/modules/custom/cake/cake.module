@@ -1,0 +1,510 @@
+<?php
+
+/**
+* Implements hook_init()
+*/
+function cake_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function cake_permission()
+{
+  return array(
+    'access cake manager' =>  array(
+      'title' => t('Access cake Manager'),
+	 		'description' => t('Permission for accessing the cake manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+
+function cake_menu()
+{
+  $cakes['cake/add'] = array(
+    'title' => 'Add cake',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('cake_add'),
+    'access arguments' => array('access cake manager'),
+    'expanded' => TRUE,
+  );
+	
+	$cakes['cake/list'] = array(
+    'title' => 'cake Manager',
+    'page callback' => 'cake_list',
+    'access arguments' => array('access cake manager'),
+    'expanded' => TRUE,
+  );
+	
+	$cakes['cake/edit'] = array(
+    'title' => 'Edit cake',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('cake_edit'),
+    'access arguments' => array('access cake manager'),
+    'expanded' => TRUE,
+  );
+	
+	$cakes['cake/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'cake_updatestatus',
+    'access arguments' => array('access cake manager'),
+    'expanded' => TRUE,
+  );
+	
+	$cakes['cake/delete'] = array(
+    'title' => 'Delete cake',
+    'page callback' => 'cake_delete',
+    'access arguments' => array('access cake manager'),
+    'expanded' => TRUE,
+  );
+	
+	$cakes['cake_view'] = array(
+		'title' => 'Cake view',
+		'description' => 'Front end side view',
+		'page callback' => 'cake_view',
+		'access callback' => TRUE,
+	);
+	
+	$cakes['cake_recadd'] = array(
+		'title' => 'Cake Add',
+		'description' => 'Front end side view',
+		'page callback' => 'cake_recadd',
+		'access callback' => TRUE,
+	);
+	
+	return $cakes;
+}
+
+
+function cake_recadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['cake'] = $_POST;
+		
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 12;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('music_view');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function cake_view()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 11))
+	{
+		return include('cake.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 11))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+			
+			case 7:
+				drupal_goto('beverage_nextview');
+			break;
+			
+			case 8:
+				drupal_goto('hors_view');
+			break;
+			
+			case 9:
+				drupal_goto('display_view');
+			break;
+			
+			case 10:
+				drupal_goto('item_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+/*
+** Delete cake Code
+*/
+function cake_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM cake where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Status of cake Code
+*/
+function cake_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update cake set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit cake Form Code
+*/
+function cake_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM cake WHERE id = {$_GET['id']}");
+		$row = array();
+
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	/* ---- cake Type Value -----
+		0 = Non-Premium,
+		1 = Premium
+	*/
+	
+	$typeValue = array('Non-Premium','Premium');
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['type'] = array(
+		'#title' => t('cake Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $row['type'],
+		'#description' => t('Select cake.'),
+	);
+	
+	$form['cakeName'] = array(
+		'#title' => t('cake Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['cakeName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the cake'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the cake'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type'  => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current cake.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type'  => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the cake'),
+	);
+	
+	$form['submit'] = array(
+		'#type'  => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit cake Code
+*/
+function cake_edit_submit($form, &$form_state)
+{
+	$type				 = $form_state['values']['type'];
+	$cakeName 	 = $form_state['values']['cakeName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	$id = $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif') 	||
+				($_FILES['files']['type']['image'] == 'image/jpeg')	|| 
+				($_FILES['files']['type']['image'] == 'image/jpg')	|| 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','cake').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE cake SET type={$type}, cakeName='{$cakeName}', price='{$price}',"
+										."image='{$image}',description='{$description}',status={$status},orderno={$orderno} WHERE id ="
+										."{$id}");
+	
+	$form_state['redirect'] = 'cake/list';	
+}
+
+/*
+** cake List Code
+*/
+function cake_list($arg = 0)
+{
+	$result = db_query('select * from cake order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		if ($record->type == 0)
+			$record->type = 'Non-Premium';
+		else if ($record->type == 1)
+			$record->type = 'Premium';
+					
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		$rows[$i]['price'] = '$'.$record->price;
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','cake').'/images/active.png',
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'cake/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','cake').'/images/inactive.png',
+							'alt' => 'Inactive image',
+							'title' => 'Inactive',
+						)
+					),
+					'cake/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit']		= l('Edit', 'cake/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'cake/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array( 
+			t('Id'),
+			t('cake Type'),
+			t('cake Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'), 
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add cake', 'cake/add');
+}
+
+/*
+** cake Add Form Code
+*/
+function cake_add($form, &$form_submit)
+{
+	/* ---- cake Type Value -----
+		0 = Non-Premium,
+		1 = Premium
+	*/
+	
+	$typeValue = array('Non-Premium','Premium');
+	
+	$form['type'] = array(
+		'#title' => t('cake Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $typeValue[0],
+		'#description' => t('Select cake.'),
+	);
+	
+	$form['cakeName'] = array(
+		'#title' => t('cake Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the cake'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Price of the cake'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('cake Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current cake.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the cake'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** cake Add Code
+*/
+function cake_add_submit($form, &$form_state)
+{
+	$type 			 = $form_state['values']['type'];
+	$cakeName 	 = $form_state['values']['cakeName'];
+	$price 			 = $form_state['values']['price'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png'))
+		{
+			$image = drupal_get_path('module','cake').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO cake(type,cakeName,price,image,description,status,orderno) VALUES( {$type},"
+										."'{$cakeName}', '{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'cake/list';	
+}

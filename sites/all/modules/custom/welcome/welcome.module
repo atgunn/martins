@@ -1,0 +1,517 @@
+<?php
+session_start(); 
+/**
+* Implements hook_init()
+*/
+function welcome_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function welcome_permission()
+{
+  return array(
+    'access welcome manager' =>  array(
+      'title' => t('Access Welcome Manager'),
+	 		'description' => t('Permission for accessing the welcome manager module.'),
+    ),
+  );
+}
+
+
+/**
+* Implements hook_menu()
+*/
+
+function welcome_menu()
+{
+  $items['welcome/list'] = array(
+    'title' => 'Welcome Manager',
+    'page callback' => 'welcome_list',
+    'access arguments' => array('access welcome manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['welcome/edit'] = array(
+    'title' => 'Edit Welcome',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('welcome_edit'),
+    'access arguments' => array('access welcome manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['welcome/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'welcome_updatestatus',
+    'access arguments' => array('access welcome manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['welcome/delete'] = array(
+    'title' => 'Delete Welcome',
+    'page callback' => 'welcome_delete',
+    'access arguments' => array('access welcome manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['welcome/booking'] = array(
+		'title' => 'Welcome Booking',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('welcome_booking'),
+		'access arguments' => array('access welcome manager'),
+		'access callback' => TRUE,
+	);
+	
+	$items['welcome/bookadd'] = array(
+		'title' => 'Welcome Book Add',
+		'page callback' => 'welcome_bookadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+			
+	$items['welcome_bookview'] = array(
+		'title' => 'Welcome view',
+		'description' => 'Front end side view',
+		'page callback' => 'welcome_bookview',
+		'access callback' => TRUE,
+	);
+	 
+	return $items;
+}
+
+function welcome_bookview()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 1))
+	{
+		return include('welcome.php');
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+function welcome_bookadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['welcome'] = $_POST;
+		//echo '<pre>'; print_r($_SESSION['welcome']); exit;
+		/*$welcomeName				 = $_POST['welcomeName'];
+		$phoneNumber				 = $_POST['phoneNumber'];
+		$email				 			 = $_POST['email'];
+		$numOfGuests				 = $_POST['numOfGuests'];
+		$guestAverage 			 = $_POST['guestAverage'];
+		$eventDate 			 		 = '2013-07-05'; //$_POST['eventDate'];
+		$eventTime 					 = $_POST['eventTime'];
+		$flexibleDateStatus	 = $_POST['flexibleDateStatus'];
+		$contactStatus 		 	 = $_POST['contactStatus'];
+		$result = db_query("INSERT INTO welcome(welcomeName,phoneNumber,email,numOfGuests,guestAverage,eventDate,"
+											."eventTime,flexibleDateStatus,contactStatus) VALUES( '{$welcomeName}', '{$phoneNumber}',"
+											."'{$email}',{$numOfGuests}, {$guestAverage},'{$eventDate}',{$eventTime},"
+											."{$flexibleDateStatus},{$contactStatus})");*/
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 2;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('discount_view');
+	else
+		drupal_goto('event_view');
+}
+
+/*
+**  Welcome Booking Form Code at Front End Side
+*/
+function welcome_booking($form, &$form_submit)
+{
+	
+	$form['welcomeName'] = array(
+		'#title' => t('Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the welcome'),
+	);
+	
+	$form['phoneNumber'] = array(
+		'#title' => t('Phone Number'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter Phone Number'),
+	);
+	
+	$form['email'] = array(
+		'#title' => t('Email'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter your email id'),
+	);
+	
+	$form['numOfGuests'] = array(
+		'#title' => t('Number of Guests'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter number of guests'),
+	);
+	
+	/** ---- Welcome Guest Average Value -----
+		0 = Low,
+		1 = Average,
+		2 = High,	
+	**/
+	
+	$guestAverage = array('Low','Average','High');
+
+	$form['guestAverage'] = array(
+		'#type' => 'select',
+		'#default_value' => $guestAverage[1],		
+		'#options' => $guestAverage,
+	);
+	
+	$format = 'Y-m-d H:i';
+	
+	$form['eventDate'] = array(
+	   '#title' => t('select Date'),
+     '#type' => 'date', 
+		 '#date_format' => $format,
+  );
+	
+	$eventTime = array('1pm-5pm','7:30pm--11:30pm or letter');
+	
+	$form['eventTime'] = array(
+		'#title' => t('select Event Time'),
+		'#type' => 'select',
+		'#default_value' => $eventTime[0],		
+		'#options' => $eventTime,
+	);
+	
+	$flexibleDateStatus = array('No','Yes');
+	$form['flexibleDateStatus'] = array(
+		'#title' => t('Flexible Date'),
+		'#type' => 'select',
+		'#options' => $flexibleDateStatus,
+		'#default_value' => $flexibleDateStatus[0],
+		'#description' => t('Select status of flexible Date.'),
+	);
+	
+	$contactStatus = array('No','Yes');
+	$form['contactStatus'] = array(
+		'#title' => t('Contact Martin Event Planner'),
+		'#type' => 'select',
+		'#options' => $contactStatus,
+		'#default_value' => $contactStatus[1],
+		'#description' => t('Select status of flexible Date.'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Welcome Booking Code at Front End Side
+*/
+function welcome_booking_submit($form, &$form_state)
+{
+	$welcomeName				 = $form_state['values']['welcomeName'];
+	$phoneNumber				 = $form_state['values']['phoneNumber'];
+	$email				 			 = $form_state['values']['email'];
+	$numOfGuests				 = $form_state['values']['numOfGuests'];
+	$guestAverage 			 = $form_state['values']['guestAverage'];
+	$eventDate 			 		 = $form_state['values']['eventDate'];
+	$eventTime 					 = $form_state['values']['eventTime'];
+	$flexibleDateStatus	 = $form_state['values']['flexibleDateStatus'];
+	$contactStatus 		 	 = $form_state['values']['contactStatus'];
+	
+	$eventDate = implode($eventDate,'-');
+	$eventDate = '2013-07-05';
+
+	$result = db_query("INSERT INTO welcome(welcomeName,phoneNumber,email,numOfGuests,guestAverage,eventDate,"
+										."eventTime,flexibleDateStatus,contactStatus) VALUES( '{$welcomeName}', '{$phoneNumber}',"
+										."'{$email}',{$numOfGuests}, {$guestAverage},'{$eventDate}',{$eventTime},"
+										."{$flexibleDateStatus},{$contactStatus})");
+}
+
+/*
+** Delete Welcome Bookin Entry Code 
+*/
+function welcome_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM welcome where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Status of Welcome Code
+*/
+function welcome_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update welcome set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit Welcome Form Code at Admin Side
+*/
+function welcome_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM welcome WHERE id = {$_GET['id']}");
+		$row = array();
+
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	/* ---- Welcome Type Value -----
+		0 = Appetizer,
+		1 = Vegatables,
+		2 = Beverage,	
+	*/
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+		
+	$form['welcomeName'] = array(
+		'#title' => t('Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['welcomeName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the User'),
+	);
+	
+	$form['phoneNumber'] = array(
+		'#title' => t('Phone Number'),
+		'#type' => 'textfield',
+		'#default_value' => $row['phoneNumber'],
+		'#required' => TRUE,
+		'#description' => t('Enter Phone Number'),
+	);
+	
+	$form['email'] = array(
+		'#title' => t('Email'),
+		'#type' => 'textfield',
+		'#default_value' => $row['email'],
+		'#required' => TRUE,
+		'#description' => t('Enter your email id'),
+	);
+	
+	$form['numOfGuests'] = array(
+		'#title' => t('Number of Guests'),
+		'#type' => 'textfield',
+		'#default_value' => $row['numOfGuests'],
+		'#required' => TRUE,
+		'#description' => t('Enter number of guests'),
+	);
+	
+	/** ---- Welcome Guest Average Value -----
+		0 = Low,
+		1 = Average,
+		2 = High,	
+	**/
+	
+	$guestAverage = array('Low','Average','High');
+
+	$form['guestAverage'] = array(
+		'#type' => 'select',
+		'#default_value' => $row['guestAverage'],
+		'#options' => $guestAverage,
+	);
+		
+	$form['eventDate'] = array(
+	   '#title' => t('select Date'),
+     '#type' => 'date', 
+		// '#default_value' => $row['eventDate'],
+  );
+	
+	$eventTime = array('1pm-5pm','7:30pm--11:30pm or letter');
+	$form['eventTime'] = array(
+		'#title' => t('select Event Time'),
+		'#type' => 'select',
+		'#default_value' => $row['eventTime'],
+		'#options' => $eventTime,
+	);
+	
+	$flexibleDateStatus = array('No','Yes');
+	$form['flexibleDateStatus'] = array(
+		'#title' => t('Flexible Date'),
+		'#type' => 'select',
+		'#options' => $flexibleDateStatus,
+		'#default_value' => $row['flexibleDateStatus'],
+		'#description' => t('Select status of flexible Date.'),
+	);
+	
+	$contactStatus = array('No','Yes');
+	$form['contactStatus'] = array(
+		'#title' => t('Contact Martin Event Planner'),
+		'#type' => 'select',
+		'#options' => $contactStatus,
+		'#default_value' => $row['contactStatus'],
+		'#description' => t('Select status of flexible Date.'),
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Event.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Event'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Welcome Code
+*/
+function welcome_edit_submit($form, &$form_state)
+{
+	$welcomeName				 = $form_state['values']['welcomeName'];
+	$phoneNumber				 = $form_state['values']['phoneNumber'];
+	$email				 			 = $form_state['values']['email'];
+	$numOfGuests				 = $form_state['values']['numOfGuests'];
+	$guestAverage 			 = $form_state['values']['guestAverage'];
+	$eventDate 			 		 = $form_state['values']['eventDate'];
+	$eventTime 					 = $form_state['values']['eventTime'];
+	$flexibleDateStatus	 = $form_state['values']['flexibleDateStatus'];
+	$contactStatus 		 	 = $form_state['values']['contactStatus'];
+	
+	$eventDate 					 = implode($eventDate,'-');
+	$eventDate 					 = '2013-07-05';
+	
+	$status 		 				 = $form_state['values']['status'];
+	$orderno 		 				 = $form_state['values']['orderno'];
+	
+	$id 								 = $form_state['values']['id'];
+	
+	
+	$result = db_query("UPDATE welcome SET welcomeName='{$welcomeName}', phoneNumber='{$phoneNumber}', email="
+										."'{$email}',numOfGuests={$numOfGuests},guestAverage={$guestAverage},eventDate='{$eventDate}',"
+										."eventTime='{$eventTime}',flexibleDateStatus={$flexibleDateStatus},contactStatus='"
+										."{$contactStatus}',status={$status},orderno={$orderno} WHERE id ="."{$id}");
+	
+	$form_state['redirect'] = 'welcome/list';	
+}
+
+/*
+** Welcome Booking List Code
+*/
+function welcome_list($arg = 0)
+{
+	$result = db_query('select * from welcome order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		if ($record->guestAverage == 0)
+			$record->guestAverage = 'Low';
+		else if ($record->guestAverage == 1)
+			$record->guestAverage = 'Average';
+		else if ($record->guestAverage == 2)
+			$record->guestAverage = 'High';
+			
+		if ($record->eventTime == 0)
+			$record->eventTime = '1pm-5pm';
+		else if ($record->eventTime == 1)
+			$record->eventTime = '7:30pm-11:30pm or letter';
+			
+		if ($record->flexibleDateStatus == 0)
+			$record->flexibleDateStatus = 'No';
+		else if ($record->flexibleDateStatus == 1)
+			$record->flexibleDateStatus = 'Yes';
+			
+		if ($record->contactStatus == 0)
+			$record->contactStatus = 'No';
+		else if ($record->contactStatus == 1)
+			$record->contactStatus = 'Yes';
+			
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','welcome').'/images/active.png',
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'welcome/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','welcome').'/images/inactive.png',
+							'alt' => 'Inactive image',
+							'title' => 'Inactive',
+						)
+					),
+					'welcome/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['edit']		= l('Edit', 'welcome/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'welcome/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array( 
+			t('Id'),
+			t('Name'),
+			t('Phone Number'),
+			t('email'),
+			t('Number Of Guests'),
+			t('Ratio'),
+			t('Event Date'),
+			t('Event Time'),
+			t('Flexible With Date'),
+			t('Flexible With Martin Plan'),
+			t('Status'), 
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output; 
+}

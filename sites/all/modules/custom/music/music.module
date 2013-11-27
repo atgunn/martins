@@ -1,0 +1,547 @@
+<?php
+/**
+* Implements hook_init()
+*/
+function music_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function music_permission()
+{
+  return array(
+    'access music manager' =>  array(
+      'title' => t('Access Music Manager'),
+	 		'description' => t('Permission for accessing the music manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+function music_menu()
+{
+  $items['music/add'] = array(
+    'title' => 'Add Music',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('music_add'),
+    'access arguments' => array('access music manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['music/list'] = array(
+    'title' => 'Music Manager',
+    'page callback' => 'music_list',
+    'access arguments' => array('access music manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['music/edit'] = array(
+    'title' => 'Edit Music',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('music_edit'),
+    'access arguments' => array('access music manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['music/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'music_updatestatus',
+    'access arguments' => array('access music manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['music/delete'] = array(
+    'title' => 'Delete Music',
+    'page callback' => 'music_delete',
+    'access arguments' => array('access music manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['music_view'] = array(
+		'title' => 'Music view',
+		'description' => 'Front end side view',
+		'page callback' => 'music_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['music/recordadd'] = array(
+	'title' => 'Music Record Add',
+	'page callback' => 'music_recordadd',
+	'access arguments' => array('access content'),
+	'access callback' => TRUE,
+	'type' => MENU_CALLBACK,
+	);
+	
+	$items['planner_view'] = array(
+		'title' => 'Planner',
+		'description' => 'Front end side view',
+		'page callback' => 'planner_view',
+		'access callback' => TRUE,
+	);
+	
+	return $items;
+}
+
+
+function planner_view()
+{	
+	return include('planner.php');
+	/*if (isset($_SESSION['step']) && ($_SESSION['step'] >= 13))
+	{
+		return include('planner.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 13))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+			
+			case 7:
+				drupal_goto('beverage_nextview');
+			break;
+			
+			case 8:
+				drupal_goto('hors_view');
+			break;
+			
+			case 9:
+				drupal_goto('display_view');
+			break;
+			
+			case 10:
+				drupal_goto('item_view');
+			break;
+			
+			case 11:
+				drupal_goto('cake_view');
+			break;
+			
+			case 12:
+				drupal_goto('music_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	} */
+}
+
+function music_recordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['music'] = $_POST;
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 13;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('planner_view');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function music_view()
+{	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 12))
+	{
+		return include('music.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 12))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+			
+			case 7:
+				drupal_goto('beverage_nextview');
+			break;
+			
+			case 8:
+				drupal_goto('hors_view');
+			break;
+			
+			case 9:
+				drupal_goto('display_view');
+			break;
+			
+			case 10:
+				drupal_goto('item_view');
+			break;
+			
+			case 11:
+				drupal_goto('cake_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+	
+}
+
+/*
+** Delete Music Code
+*/
+function music_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM music where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Music Status Code
+*/
+function music_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update music set status = !status where id={$_GET['id']}");
+		
+	header('Location: list');
+}
+
+/*
+** Edit Music Form Code
+*/
+function music_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM music WHERE id = {$_GET['id']}");
+		$row = array();
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['musicName'] = array(
+		'#title' => t('Music Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['musicName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the Music'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Music.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Music'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Music Code
+*/
+function music_edit_submit($form, &$form_state)
+{
+	$musicName = $form_state['values']['musicName'];
+	$price 			  = $form_state['values']['price'];
+	$image 				= $form_state['values']['image'];
+	$description 	= $form_state['values']['description'];
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+	$id 					= $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image']  == 'image/gif')	 ||
+				($_FILES['files']['type']['image']  == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] 	== 'image/jpg')  || 
+				($_FILES['files']['type']['image'] 	== 'image/pjpeg')||
+				($_FILES['files']['type']['image'] 	== 'image/x-png')||
+				($_FILES['files']['type']['image'] 	== 'image/png' ))
+		{
+			$image = drupal_get_path('module','music').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE music SET musicName='{$musicName}',price='{$price}',image='{$image}', description"
+										."='{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+	$form_state['redirect'] = 'music/list';	
+}
+
+
+/*
+** Music List Code
+*/
+function music_list($arg = 0)
+{
+	$result = db_query('select * from music order by orderno');
+  $rows = array();
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		$rows[$i]['price'] = '$'.$record->price;
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','music').'/images/active.png', 
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'music/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','music').'/images/inactive.png', 
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'music/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit'] = l('Edit', 'music/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'music/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(
+			t('Id'),
+			t('Music Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'),
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+	
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Music', 'music/add');
+}
+
+/*
+** Music Add Form Code
+*/
+function music_add($form, &$form_submit)
+{
+	$form['musicName'] = array(
+		'#title' => t('Music Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the Music'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Music Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current music.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Music'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Music Add Code
+*/
+function music_add_submit($form, &$form_state)
+{
+	$musicName 		= $form_state['values']['musicName'];
+	$price 			  = $form_state['values']['price'];
+	$image 				= $form_state['values']['image'];
+	$description 	= $form_state['values']['description'];
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','music').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO music(musicName,price,image,description,status,orderno) VALUES( '{$musicName}',"
+										 ."'{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'music/list';	
+}

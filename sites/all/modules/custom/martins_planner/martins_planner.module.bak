@@ -1,0 +1,1409 @@
+<?php
+
+/**
+* Implements hook_menu()
+*/
+function martins_planner_menu()
+{
+	$items['planner'] = array(
+		'title' => "Martin's Catering Planner",
+		'page callback' => 'martins_planner_calculator',
+		'access callback' => TRUE,
+	);
+	$items['locations-submit'] = array(
+		'title' => "Martin's Catering Planner",
+		'page callback' => 'martins_planner_locations_submit',
+		'access callback' => TRUE,
+	);
+	$items['test'] = array(
+		'title' => "Martin's Catering Planner",
+		'page callback' => 'martins_planner_test',
+		'access callback' => TRUE,
+	);
+	$items['startover'] = array(
+		'title' => "",
+		'page callback' => 'martins_planner_reset',
+		'access callback' => TRUE,
+	);
+	
+	return $items;
+}	
+function martins_planner_test()
+{
+  dsm(martins_planner_pricing_matrix());
+  return '';
+}
+function martins_planner_reset()
+{
+  unset($_SESSION['mpricing']);
+  drupal_goto('<front>');
+}
+/**
+ * Implements hook_block_info().
+ */
+function martins_planner_block_info() {
+  $blocks = array();
+  $blocks['fm_event_type'] = array(
+    'info' => t('Event Type Form'),
+  );
+  $blocks['fm_event_entree'] = array(
+    'info' => t('Entree Form'),
+  );
+  $blocks['fm_event_beverage'] = array(
+    'info' => t('Beverage Form'),
+  );
+  $blocks['fm_event_hdo'] = array(
+    'info' => t('HDO Form'),
+  );
+  $blocks['fm_event_cake'] = array(
+    'info' => t('Cake Form'),
+  );
+  $blocks['fm_event_music'] = array(
+    'info' => t('Music Form'),
+  );
+  $blocks['fm_event_options'] = array(
+    'info' => t('Other Options Form'),
+  );
+  $blocks['fm_event_display'] = array(
+    'info' => t('Display Form'),
+  );
+  $blocks['fm_event_welcome'] = array(
+    'info' => t('Welcome Form'),
+  );
+  $blocks['fm_locations'] = array(
+    'info' => t('Location Form'),
+  );
+  $blocks['entree_buttons'] = array(
+    'info' => t('Buttons for the base entree page'),
+  );
+ 
+  return $blocks;
+}
+/**
+ * Implements hook_block_view().
+ */
+function martins_planner_block_view($delta='') {
+  $block = array();
+ 
+  switch($delta) {
+    case 'fm_event_type':
+      $block['content'] = drupal_get_form('martins_planner_event_type_form');
+      break;
+    case 'fm_event_entree':
+      $block['content'] = drupal_get_form('martins_planner_entree_form');
+      break;
+    case 'fm_event_beverage':
+      $block['content'] = drupal_get_form('martins_planner_beverage_form');
+      break;
+    case 'fm_event_hdo':
+      $block['content'] = drupal_get_form('martins_planner_hdo_form');
+      break;
+    case 'fm_event_cake':
+      $block['content'] = drupal_get_form('martins_planner_cake_form');
+      break;
+    case 'fm_event_music':
+      $block['content'] = drupal_get_form('martins_planner_music_form');
+      break;
+    case 'fm_event_options':
+      $block['content'] = drupal_get_form('martins_planner_options_form');
+      break;
+    case 'fm_event_display':
+      $block['content'] = drupal_get_form('martins_planner_display_form');
+      break;
+    case 'fm_event_welcome':
+      $block['content'] = drupal_get_form('martins_planner_welcome_form');
+      break;
+    case 'fm_locations':
+      $block['content'] = drupal_get_form('martins_planner_location_form');
+      //martins_planner_load_locations();
+      break;
+    case 'entree_buttons':
+      $block['content'] = martins_planner_button_bar('locations','entrees-premium',true);
+  }
+ 
+  return $block;
+}
+function martins_planner_sessionize($form_values)
+{
+  foreach($form_values as $key=>$value)
+  {
+    $aval = $value;
+    if (!is_array($value)) $aval = array($value);
+    if (strpos($key, 'event_') === 0) $_SESSION['mpricing'][$key] = $aval;
+  } 
+  //dsm($_SESSION['mpricing']);
+
+}
+function martins_planner_locations_submit()
+{
+  //dsm($_POST);
+  $location = array('event_location' => $_POST['locationId']);
+  martins_planner_sessionize($location);
+  drupal_goto('entrees');
+}
+function martins_planner_button_bar($link_previous,$link_next,$so)
+{
+  $out = '';
+  if ($so) $out .= "<a href='/startover' class='pp'>Start Over</a>";
+  $out .= "<a href='/$link_previous' class='pp'>Previous</a>";
+  $out .= "<a href='/$link_next' class='pp'>Next</a>";
+  return $out;
+}
+function martins_planner_event_type_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $types = martins_planner_load_taxonomy($taxes['event_type']['vid']);
+
+  $privates = martins_planner_load_tagged_entities('event',8);
+  $commercials = martins_planner_load_tagged_entities('event',9);
+
+  //build js to swamp images based on image field
+  $switch = 'switch (tid) {';
+  foreach($privates as $nid=>$name)
+  {
+    $event = node_load($nid);
+    $url = "/sites/default/files/images/Waterlilies.jpg";
+    if (isset($event->field_image['und'])) $url = file_create_url($event->field_image['und'][0]['uri']);
+    $switch .= "case '$event->nid': locimage='$url'; break; \n";
+  }
+  foreach($commercials as $nid=>$name)
+  {
+    $event = node_load($nid);
+    $url = "/sites/default/files/images/Waterlilies.jpg";
+    if (isset($event->field_image['und'])) $url = file_create_url($event->field_image['und'][0]['uri']);
+    $switch .= "case '$event->nid': locimage='$url'; break; \n";
+  }
+  $switch .= "}";
+  $js = "function swapImage(tid){
+    $switch\n
+    jQuery('#event-img').attr('src',locimage);
+  };\n";
+  drupal_add_js($js,'inline');  
+
+  $form['type_fg'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Event Type',
+		'#collapsible' => FALSE,
+		'#collapsed' => FALSE,
+		'#prefix' => '<div class="type-fieldset">',
+		'#suffix' => '</div>'
+  
+  );
+  $form['type_fg']['event_type'] = array(
+    '#type' => 'radios',
+    '#options' =>  $types
+  );
+  $form['private_fg'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Type of Private Party',
+		'#collapsible' => FALSE,
+		'#collapsed' => FALSE,
+		'#prefix' => '<div class="pp-fieldset">',
+		'#suffix' => '</div>',
+		'#states' => array(
+      'visible' => array(
+        ':input[name="event_type"]' => array('value' => 8),
+        ),
+      'required' => array(
+        ':input[name="event_type"]' => array('value' => 8),
+        ),
+      ),
+    );
+  $form['commercial_fg'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Type of Commercial Meeting',
+		'#collapsible' => FALSE,
+		'#collapsed' => FALSE,
+		'#prefix' => '<div class="comm-fieldset">',
+		'#suffix' => '</div>',
+    '#attributes' => array("onclick" => "swapImage(this.value )"),
+		'#states' => array(
+      'visible' => array(
+        ':input[name="event_type"]' => array('value' => 9),
+        ),
+      'required' => array(
+        ':input[name="event_type"]' => array('value' => 9),
+        ),
+      ),
+    );
+  $form['private_fg']['event_type_pp'] = array(
+    '#type' => 'radios',
+    '#options' =>  $privates,
+    '#attributes' => array("onclick" => "swapImage(this.value )"),
+    
+  );
+  $form['commercial_fg']['event_type_com'] = array(
+    '#type' => 'radios',
+    '#options' =>  $commercials,
+    '#attributes' => array("onclick" => "swapImage(this.value )"),
+  );
+  $form['type_disclaimer'] = array(
+    '#markup' => "<p class='k-formsep subavailable'>Tradeshows require Consultation with an Event Planner.</p>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+    '#options' =>  $types,
+  );
+          
+  
+  return $form;
+}
+function martins_planner_event_type_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("welcome");
+}
+function martins_planner_entree_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $levels = martins_planner_load_taxonomy($taxes['entree_levels']['vid']);
+  $default = isset($_SESSION['mpricing']['event_beverage']) ? $_SESSION['mpricing']['event_beverage'][0] : 0;
+
+/*
+  $form['type_display'] = array(
+    '#markup' => "<label>Select Your Entree Level</label><div class=type_display>$type_term</div>"
+  );
+*/
+  $levels[0] = "Select Your Entree Level";
+  $form['event_entree'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#default_value' => $default,
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/entrees' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+  );
+          
+  
+  return $form;
+}
+function martins_planner_entree_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("beverages");
+}
+function martins_planner_beverage_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $default = isset($_SESSION['mpricing']['event_beverage']) ? $_SESSION['mpricing']['event_beverage'][0] : 0;
+  if ($_SESSION['mpricing']['event_type'] == 9 )
+  {
+    $levels = array(
+      '1' => 'One Hour',
+      '2' => 'Two Hours',
+      '3' => 'Three Hours',
+      '4' => 'Four Hours',
+      '5' => 'Five Hours',
+    );
+    $form['type_display'] = array(
+      '#markup' => "<label>Select Your Open Bar duration</label>"
+    );
+  }
+  else
+  {
+    $form['type_display'] = array(
+      '#markup' => "<label>Select Your Beverage Level</label>"
+    );
+    $levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+  }
+
+  $form['event_beverage'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#default_value'=> $default,
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/entrees-premium' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+  );
+          
+  
+  return $form;
+}
+function martins_planner_beverage_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("hors-doeuvres");
+}
+function martins_planner_hdo_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $default = isset($_SESSION['mpricing']['event_hdo']) ? $_SESSION['mpricing']['event_hdo'][0] : 0;
+
+  $levels = martins_planner_load_taxonomy($taxes['hors_d_oeuvres']['vid']);
+  $form['type_display'] = array(
+    '#markup' => "<label>Select Your Hors D'oeuvres Level</label><div class=type_display>$type_term</div>"
+  );
+  $form['event_hdo'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#default_value' => $default
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/beverages' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+
+  );
+          
+  
+  return $form;
+}
+function martins_planner_hdo_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("displays");
+}
+function martins_planner_display_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+
+  $levels = martins_planner_load_taxonomy($taxes['displays']['vid']);
+  $levels[0] = "no display";
+  $default = isset($_SESSION['mpricing']['event_display']) ? $_SESSION['mpricing']['event_display'][0] : 0;
+
+  $form['type_display'] = array(
+    '#markup' => "<label>Select Display</label>"
+  );
+  $form['event_display'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#default_value' => $default, 
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/hors-doeuvres' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+  );
+          
+  
+  return $form;
+}
+function martins_planner_display_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("options");
+}
+function martins_planner_options_form($form, &$form_state)
+{
+  $other_options = martins_planner_load_entities('option_price', true);
+  $default = isset($_SESSION['mpricing']['event_options']) ? $_SESSION['mpricing']['event_options'] : array();
+
+  $header = array(
+    'item' => t('Item'),
+    'cost' => t('Cost Per Person'),
+    'photo' => t('View Photo'),
+  );
+  $options = array();
+
+  foreach($other_options as $nid=>$node)
+  {
+    $cost = (isset($node->field_price['und'])) ? $node->field_price['und'][0]['value'] : 0;
+    $photo = (isset($node->field_image['und'])) ? file_create_url($node->field_image['und'][0]['uri']) : '';
+    $photo_ref = "";
+    if (strlen($photo))$photo_ref = "<a href='$photo' class='flickrgallery-image lightbox2' rel=lightbox><img src=/sites/default/files/images/photo-icon></a>";
+    $options[$nid] = array(
+      'item' => $node->title,
+      'cost' => "$ $cost",
+      'photo' => $photo_ref,
+
+    );
+  }
+  $form['type_display'] = array(
+    '#markup' => "<label>Select Additional Options</label>"
+  );
+ $form['event_options'] = array(
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => $options,
+    '#empty' => t('No options found'),
+    '#default_value' => $default,
+    '#js_select' => FALSE,
+  );  
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/displays' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+  );
+          
+  
+  return $form;
+}
+function martins_planner_options_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+  //dsm($_SESSION['mpricing']);
+  drupal_goto("cakes");
+}
+function martins_planner_cake_form($form, &$form_state)
+{
+  $other_options = martins_planner_load_entities('cake_price');
+  $default = isset($_SESSION['mpricing']['event_cakes']) ? $_SESSION['mpricing']['event_cakes'] : array();
+
+  $form['type_display'] = array(
+    '#markup' => "<label>Select Cake Options</label>"
+  );
+  $form['event_cakes'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $other_options,
+    '#default_value' => $default,
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/options' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+  );
+          
+  
+  return $form;
+}
+function martins_planner_cake_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);  
+  drupal_goto("music");
+}
+function martins_planner_music_form($form, &$form_state)
+{
+  $other_options = martins_planner_load_entities('music_price');
+  $default = isset($_SESSION['mpricing']['event_music']) ? $_SESSION['mpricing']['event_beverage'] : array();
+
+  $form['type_display'] = array(
+    '#markup' => "<label>Music Options</label>"
+  );
+  $form['event_music'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $other_options,
+    '#default_value' => $default,
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/cake' class='pp'>Previous</a>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+    '#options' =>  $types,
+  );
+          
+  
+  return $form;
+}
+function martins_planner_music_form_submit($form, &$form_state)
+{
+  //unset($_SESSION['mpricing']);
+  //dsm($form_state['values']);
+  martins_planner_sessionize($form_state['values']);
+ // dsm($_SESSION['mpricing']);
+  drupal_goto("planner");
+}
+function martins_planner_location_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $terms = taxonomy_get_tree($taxes['location']['vid'],0,NULL,TRUE);
+  $default = isset($_SESSION['mpricing']['event_location']) ? $_SESSION['mpricing']['event_location'][0] : 0;
+
+  //dsm($terms);
+  $locations = array();
+  $switch = 'switch (tid) {';
+  foreach($terms as $tid=>$location)
+  {
+    $out = "<div class=loc-contain>" . "<div class=loc-addr>" . $location->name . "</div>";
+    if (isset($location->field_street_address['und'])) $out .= "<div class=loc-addr>" . $location->field_street_address['und'][0]['value'] . "</div>";
+    if (isset($location->field_csz['und'])) $out .= "<div class=loc-addr>" . $location->field_csz['und'][0]['value'] . "</div>";
+    if (isset($location->field_phone['und'])) $out .= "<div class=loc-addr>" . $location->field_phone['und'][0]['value'] . "</div>";
+    $out .= "</div>";
+    $url = "/sites/default/files/images/Waterlilies.jpg";
+    if (isset($location->field_image['und'])) $url = file_create_url($location->field_image['und'][0]['uri']);
+    $switch .= "case '$location->tid': locimage='$url'; break; \n";
+    $locations[$location->tid] = $out;
+  }
+  $switch .= "}";
+  //dsm($switch);
+  $js = "function swapImage(tid){
+    $switch\n
+    jQuery('#event-img').attr('src',locimage);
+  };\n";
+  drupal_add_js($js,'inline');  
+  
+  
+  $form['type_display'] = array(
+    '#markup' => "<label>Locations</label>"
+  );
+  //pass js an array of image urls?
+  $form['event_location'] = array(
+    '#type' => 'radios',
+    '#options' =>  $locations,
+    '#default_value' => $default,
+    '#attributes' => array("onclick" => "swapImage(this.value )"),
+  );
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/discounts' class='pp'>Previous</a>"
+  );
+  
+ 
+  
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+    '#options' =>  $types,
+  );
+  return $form;
+}
+function martins_planner_location_form_submit($form, &$form_state)
+{
+  martins_planner_sessionize($form_state['values']);
+  drupal_goto("entrees");
+}
+
+
+/**
+ * Implements webform_submission_insert().
+ */
+
+function martins_planner_webform_submission_insert($node, $submission)
+{
+  //dsm($submission);
+  $values['event_date'] = $submission->data[6]['value'][0];
+  $values['event_timeofday'] = $submission->data[7]['value'][0];
+  $values['event_count'] = $submission->data[5]['value'][0];
+  martins_planner_sessionize($values);
+  //dsm($_SESSION['mpricing']);
+}
+function martins_planner_welcome_form($form, &$form_state)
+{
+  $taxes = martins_planner_list_taxonomies();
+  $types = martins_planner_load_taxonomy($taxes['event_type']['vid']);
+  $form['event_name'] = array(
+    '#markup' => "<label>Event type:</label><div class=type_display>$type_term</div>"
+  );
+  $form['event_type'] = array(
+    '#type' => 'radios',
+    '#default_value' => 8,
+    '#options' =>  $types
+  );
+  $form['type_disclaimer'] = array(
+    '#markup' => "<p class='k-formsep subavailable'>Tradeshows require Consultation with an Event Planner.</p>"
+  );
+  $form['type_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next',
+    '#options' =>  $types,
+    '#prefix' => "<p class='pn k-form-right'>",
+    '#suffix' => "</p>"
+  );
+          
+  
+  return $form;
+}
+function martins_planner_load_locations()
+{
+  $taxes = martins_planner_list_taxonomies();
+  $terms = taxonomy_get_tree($taxes['location']['vid']);
+  dsm($terms);
+
+}
+function martins_planner_load_locations_static()
+{
+  $path = drupal_get_path('module','martins_planner');
+  return include("$path/inc/location_block.php");
+}
+
+function martins_planner_calculator($param = 8)
+{
+  return drupal_get_form('martins_planner_form');
+}
+function martins_planner_form($form, &$form_state)
+{
+  $defaults = array();
+
+  $defaults['event_type'] = isset($_SESSION['mpricing']['event_type']) ? $_SESSION['mpricing']['event_type'] : array('0');
+  $defaults['event_date'] = isset($_SESSION['mpricing']['event_date']) ? $_SESSION['mpricing']['event_date'] : array('0');
+  $defaults['event_timeofday'] = isset($_SESSION['mpricing']['event_date']) ? $_SESSION['mpricing']['event_timeofday'] : array('0');
+  $defaults['event_count'] = isset($_SESSION['mpricing']['event_count']) ? $_SESSION['mpricing']['event_count'] : array('0');
+  $defaults['event_location'] = isset($_SESSION['mpricing']['event_location']) ? $_SESSION['mpricing']['event_location'] : array('0');
+  $defaults['event_entree'] = isset($_SESSION['mpricing']['event_entree']) ? $_SESSION['mpricing']['event_entree'] : array('0');
+  $defaults['event_beverage'] = isset($_SESSION['mpricing']['event_beverage']) ? $_SESSION['mpricing']['event_beverage'] : array('0');
+  $defaults['event_hdo'] = isset($_SESSION['mpricing']['event_hdo']) ? $_SESSION['mpricing']['event_hdo'] : array('0');
+  $defaults['event_display'] = isset($_SESSION['mpricing']['event_display']) ? $_SESSION['mpricing']['event_display'] : array('0');
+  $defaults['event_cakes'] = isset($_SESSION['mpricing']['event_cakes']) ? $_SESSION['mpricing']['event_cakes'] : array('0');
+  $defaults['event_music'] = isset($_SESSION['mpricing']['event_music']) ? $_SESSION['mpricing']['event_music'] : array('0');
+  $defaults['event_options'] = isset($_SESSION['mpricing']['event_options']) ? $_SESSION['mpricing']['event_options'] : array('0');
+// dsm($_SESSION['mpricing']);
+//dsm($defaults);
+
+  $def_location = isset($form_state['values']['event_location']) ? $form_state['values']['event_location'] : '';
+  $music = martins_planner_load_entities('music_price');
+  $cakes = martins_planner_load_entities('cake_price');
+  $other_options = martins_planner_load_entities('option_price');
+  $type2 = martins_planner_load_entities('event');
+  $description = '';
+  if (isset($_SESSION['mpricing']['event_type_pp'][0])) $description = $type2[$_SESSION['mpricing']['event_type_pp'][0]];
+  if (isset($_SESSION['mpricing']['event_type_com'][0])) $description = $type2[$_SESSION['mpricing']['event_type_com'][0]];
+
+  $taxes = martins_planner_list_taxonomies();
+
+  $types = martins_planner_load_taxonomy($taxes['event_type']['vid']);
+  $type_tid = $defaults['event_type'][0];
+  //if ($plan) $type_tid = $plan;
+  $type_term = $types[$type_tid];
+
+  $locations = martins_planner_load_taxonomy($taxes['location']['vid']);
+  $levels = martins_planner_load_taxonomy($taxes['entree_levels']['vid']);
+  $hdo = martins_planner_load_taxonomy($taxes['hors_d_oeuvres']['vid']);
+  $bev_levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+  $displays = martins_planner_load_taxonomy($taxes['displays']['vid']);
+
+
+  $form = array();
+  $form['event_type'] = array(
+    '#type' => 'hidden',
+    '#value' =>  $type_tid,
+  );
+  $form['type_display'] = array(
+    '#markup' => "<table id=p-table><tr class=p-row><td class='p-label c1'>Event type:</td><td class='type_display c2'><p>$type_term</p><p>$description</p></td><td class=c3>&nbsp;</td></tr>"
+  );
+  $form['m1'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Event Date</td>"
+  );
+  $form['event_date_p1'] = array(
+    '#type' => 'date_popup',
+    '#date_format' => 'm/d/Y',
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_date'][0],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_date'] = array(
+    '#type' => 'date_popup',
+    '#date_format' => 'm/d/Y',
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_date'][0],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m2'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Location</td>"
+  );
+  $form['event_location_p1'] = array(
+    '#type' => 'select',
+    '#options' =>  $locations,
+    '#required' => TRUE,
+    '#description' => "",
+    '#default_value' => $defaults['event_location'][0],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_location'] = array(
+    '#type' => 'select',
+    '#options' =>  $locations,
+    '#required' => TRUE,
+    '#description' => "",
+    '#default_value' => $defaults['event_location'][0],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m3'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Time of Day</td>"
+  );
+  $form['event_timeofday_p1'] = array(
+    '#type' => 'radios',
+    '#options' =>  array('0'=>'any','1'=>'AM','2'=>'PM'),
+    '#required' => TRUE,
+    '#default_value' => $defaults['event_timeofday'][0],
+    '#description' => "",
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_timeofday'] = array(
+    '#type' => 'radios',
+    '#options' =>  array('0'=>'any','1'=>'AM','2'=>'PM'),
+    '#required' => TRUE,
+    '#default_value' => $defaults['event_timeofday'][0],
+    '#description' => "",
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m4'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Number of Guests</td>"
+  );
+	$form['event_count_p1'] = array(
+		'#type' => 'textfield',
+		'#size' => '10',
+		'#default_value' => $defaults['event_count'][0],
+		'#description' => '(100 guest minimum)',
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+	$form['event_count'] = array(
+		'#type' => 'textfield',
+		'#size' => '10',
+		'#default_value' => $defaults['event_count'][0],
+		'#description' => '(100 guest minimum)',
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m5'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Entree Level</td>"
+  );
+  $form['entree_level_p1'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#required' => TRUE,
+    '#description' => "",
+    '#default_value' => $defaults['event_entree'][0],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['entree_level'] = array(
+    '#type' => 'select',
+    '#options' =>  $levels,
+    '#required' => TRUE,
+    '#description' => "",
+    '#default_value' => $defaults['event_entree'][0],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+   $show_wed_bev = ($type_tid == 8);
+  $show_com_bev = !$show_wed_bev;
+
+  $form['m6'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Beverage Options</td>", 
+    '#access' => $show_wed_bev,
+  );
+
+  $form['event_bev_level_p1'] = array(
+    '#access' => $show_wed_bev,
+    '#type' => 'select',
+    '#options' =>  $bev_levels,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_beverage'][0],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_bev_level'] = array(
+    '#access' => $show_wed_bev,
+    '#type' => 'select',
+    '#options' =>  $bev_levels,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_beverage'][0],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td>'
+  );
+  $form['m11'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Beverage Options</td>", 
+    '#access' => $show_com_bev,
+  );
+  $hours = array(
+    '1' => 'One Hour',
+    '2' => 'Two Hours',
+    '3' => 'Three Hours',
+    '4' => 'Four Hours',
+    '5' => 'Five Hours',
+  );
+  $form['event_bev_hours_p1'] = array(
+    '#access' => $show_com_bev,
+    '#type' => 'radios',
+    '#options' =>  $hours,
+    '#required' => FALSE,
+    '#default_value' => 1,
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_bev_hours'] = array(
+    '#access' => $show_com_bev,
+    '#type' => 'radios',
+    '#options' =>  $hours,
+    '#required' => FALSE,
+    '#default_value' => 1,
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m7'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Displays</td>"
+  );
+  $form['event_displays_p1'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $displays,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_display'],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_displays'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $displays,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_display'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+
+  );
+  $form['m8'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Hors D'Oeuvres</td>"
+  );
+  $form['event_hdo_p1'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $hdo,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_hdo'],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_hdo'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $hdo,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_hdo'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m9'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Music</td>"
+  );
+  $form['event_music_p1'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $music,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_music'], 
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_music'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $music,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_music'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m12'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Cake</td>"
+  );
+  $form['event_cakes_p1'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $cakes,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_cakes'],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['event_cakes'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $cakes,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_cakes'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m10'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Options</td>"
+  );
+  $form['event_options_p1'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $other_options,
+    '#required' => FALSE,
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>', 
+    '#default_value' => $defaults['event_options'],
+  );
+  $form['event_options'] = array(
+    '#type' => 'checkboxes',
+    '#options' =>  $other_options,
+    '#required' => FALSE,
+    '#default_value' => $defaults['event_options'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['m13'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'>Your Estimate</td>"
+  );
+  $form['price_display_p1'] = array(
+    '#markup' => $form_state['values']['price_display_p1'],
+    '#prefix' => '<td class=c2>',
+    '#suffix' => '</td>'
+  );
+  $form['price_display'] = array(
+    '#markup' => $form_state['values']['price_display'],
+    '#prefix' => '<td class=c3>',
+    '#suffix' => '</td></tr>'
+  );
+  $form['mx'] = array(
+    '#markup' => "</table>"
+  );
+
+/*
+  $form['m14'] = array(
+    '#markup' => "<tr class=p-row><td class='p-label c1'></td><td class=c2></td>"
+  );
+*/
+  $form['btn-startover'] = array(
+    '#markup' => "<a href='/startover' class='pp'>Start Over</a>"
+  );
+  $form['btn-previous'] = array(
+    '#markup' => "<a href='/music' class='pp'>Previous</a>"
+  );
+  $form['event_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Calculate',
+  );
+
+  return $form;
+
+}
+function martins_planner_form_validate($form, &$form_state)
+{
+  if (!is_numeric($form_state['values']['event_count'])) 
+  {
+    form_set_error("event_count","Number of guests must be a numeric value of at least 100.");  
+  }
+  else
+  {
+    if ($form_state['values']['event_count'] < 100) 
+      form_set_error("event_count","Number of guests must be a numeric value of at least 100.");
+  }
+  
+}
+function martins_planner_form_submit($form, &$form_state)
+{
+
+  $type = $form_state['values']['event_type'];
+  
+  $proposal['type'] = $type;
+  $proposal['location'] = $form_state['values']['event_location'];
+  $proposal['entree_level'] = $form_state['values']['entree_level'];
+  $proposal['count'] = $form_state['values']['event_count'];
+  $proposal['date'] = $form_state['values']['event_date'];
+  $proposal['tod'] = $form_state['values']['event_timeofday'];
+  if ($type == 8)
+  {
+    $proposal['event_bev_level'] = $form_state['values']['event_bev_level'];
+  }
+  else
+  {
+    $proposal['event_bev_hours'] = $form_state['values']['event_bev_hours'];
+  }
+  foreach($form_state['values']['event_displays'] as $key=>$value)
+  {
+    if ($value) $proposal['displays'][] = $value;
+  }
+  foreach($form_state['values']['event_hdo'] as $key=>$value)
+  {
+    if ($value) $proposal['hdo'][] = $value;
+  }
+  foreach($form_state['values']['event_music'] as $key=>$value)
+  {
+    if ($value) $proposal['music'][] = $value;
+  }
+  foreach($form_state['values']['event_cakes'] as $key=>$value)
+  {
+    if ($value) $proposal['cakes'][] = $value;
+  }
+  foreach($form_state['values']['event_options'] as $key=>$value)
+  {
+    if ($value) $proposal['options'][] = $value;
+  }
+ $price = martins_planner_calculate_pricing($proposal);
+ $ppp = number_format($price['ppp']['total'],2);
+ $ppe = number_format($price['ppe']['total'],2);
+ $gt = number_format($price['grand_total'],2);
+ $form_state['rebuild'] = TRUE;
+
+ $form_state['values']['price_display'] = '<p></p>';
+ if ($price['discount']['amount']) $form_state['values']['price_display'] = "Discount: " . 
+  $price['discount']['description'] . " (" . $price['discount']['amount'] . "%)";
+
+
+ $form_state['values']['price_display'] .= "<div>Price per person: $ $ppp<div>";
+ if ($price['ppe']['total']) $form_state['values']['price_display'] .= "<div>Price per event: $ $ppe<div>";
+ $form_state['values']['price_display'] .= "<div>Total for " . $proposal['count'] . " Guests: $ $gt<div>";
+
+  $p1['type'] = $type;
+  $p1['location'] = $form_state['values']['event_location_p1'];
+  $p1['entree_level'] = $form_state['values']['entree_level_p1'];
+  $p1['count'] = $form_state['values']['event_count_p1'];
+  $p1['date'] = $form_state['values']['event_date_p1'];
+  $p1['tod'] = $form_state['values']['event_timeofday_p1'];
+
+  if ($type == 8)
+  {
+    $p1['event_bev_level'] = $form_state['values']['event_bev_level_p1'];
+  }
+  else
+  {
+    $p1['event_bev_hours'] = $form_state['values']['event_bev_hours_p1'];
+  }
+  foreach($form_state['values']['event_displays_p1'] as $key=>$value)
+  {
+    if ($value) $p1['displays'][] = $value;
+  }
+  foreach($form_state['values']['event_hdo_p1'] as $key=>$value)
+  {
+    if ($value) $p1['hdo'][] = $value;
+  }
+  foreach($form_state['values']['event_music_p1'] as $key=>$value)
+  {
+    if ($value) $p1['music'][] = $value;
+  }
+  foreach($form_state['values']['event_cakes_p1'] as $key=>$value)
+  {
+    if ($value) $p1['cakes'][] = $value;
+  }
+  foreach($form_state['values']['event_options_p1'] as $key=>$value)
+  {
+    if ($value) $p1['options'][] = $value;
+  }
+ $price = martins_planner_calculate_pricing($p1);
+ $ppp = number_format($price['ppp']['total'],2);
+ $ppe = number_format($price['ppe']['total'],2);
+ $gt = number_format($price['grand_total'],2);
+
+ $form_state['values']['price_display_p1'] = '<p></p>';
+ if ($price['discount']['amount']) $form_state['values']['price_display_p1'] = "Discount: " . 
+  $price['discount']['description'] . " (" . $price['discount']['amount'] . "%)";
+
+ $form_state['values']['price_display_p1'] .= "<div>Price per person: $ $ppp<div>";
+ if ($price['ppe']['total']) $form_state['values']['price_display_p1'] .= "<div>Price per event: $ $ppe<div>";
+ $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests: $ $gt<div>";
+
+
+}
+function martins_planner_calculate_pricing($proposal)
+{
+  $ppp = 0;
+  $matrix_full = martins_planner_pricing_matrix();
+  $prices = array();
+  $type = $proposal['type'];
+  $location = $proposal['location'];
+  $matrix = $matrix_full[$proposal[type]] [$proposal[location]] ;
+  //dsm($matrix);
+  //dsm($proposal);
+  $prices['discount'] = martins_planner_get_discount($proposal['date'], $proposal['tod']);
+  $prices['discount']['pct'] = 1;
+  if ($prices['discount']['amount']) $prices['discount']['pct'] = 1 - $prices['discount']['amount'] /100;
+  //dsm($prices['discount']);
+  //entree base + level
+  $base_price = $matrix['entree_price']['base_price'];
+  $base_tid = $matrix['entree_price']['base_tid'];
+
+  //base price, discount applied
+  if ($base_tid == $proposal['entree_level'])
+  {
+    $prices['ppp']['entree'] = $base_price * $prices['discount']['pct'];
+  }
+  else
+  {
+    $prices['ppp']['entree'] = ($base_price + $matrix['entree_price'][$proposal[entree_level]]) * $prices['discount']['pct'];
+  }
+  //discount on bev, too
+  if ($type == 8)
+  {
+    $prices['ppp']['beverage'] = $matrix['beverage_price'][$proposal[event_bev_level]] * $prices['discount']['pct'];
+  }
+  else
+  {
+    $prices['ppp']['beverage'] = 0;
+    $max_hours = $proposal['event_bev_hours'];
+    for ($h = 1; $h <= $max_hours; $h++)
+    {
+      $prices['ppp']['beverage'] += $matrix['beverage_price'][$h];
+    }
+    $prices['ppp']['beverage'] = $prices['discount']['pct'] * $prices['ppp']['beverage'];
+  }
+  $prices['ppp']['displays'] = 0;
+  $prices['ppp']['hdo'] = 0;
+  $prices['ppe']['music'] = 0;
+  $prices['ppp']['cakes'] = 0;
+  foreach ($proposal['displays'] as $tid)
+  {
+    $prices['ppp']['displays'] += $matrix['display_price'][$tid];
+  }
+  foreach ($proposal['hdo'] as $tid)
+  {
+    $prices['ppp']['hdo'] += $matrix['hdo_price'][$tid];
+  }
+  foreach ($proposal['cakes'] as $tid)
+  {
+    $prices['ppp']['cakes'] += $matrix['cake_price'][$tid]['price'];
+  }
+  foreach ($proposal['music'] as $tid)
+  {
+    $prices['ppe']['music'] += $matrix['music_price'][$tid]['price'];
+  }
+  $ppp = 0;
+  foreach($prices['ppp'] as $p)
+  {
+    $ppp += $p;
+  }
+  $ppe = 0;
+  foreach($prices['ppe'] as $p)
+  {
+    $ppe += $p;
+  }
+  $prices['ppp']['total'] = $ppp;
+  $prices['ppe']['total'] = $ppe;
+  $prices['grand_total'] = ($ppp * $proposal['count']) + $ppe;
+  //dsm($prices);
+  return $prices;
+}
+function martins_planner_load_taxonomy($tid)
+{
+  $terms = taxonomy_get_tree($tid);
+  $out = array();
+  foreach ($terms as $term)
+  {
+    $out[$term->tid] = $term->name;
+  }
+  return $out;
+}
+function martins_planner_get_discount($date, $tod)
+{
+
+  $udate = strtotime($date);
+
+/*
+  $udate = 1388529100;
+  $tod = 1;
+*/
+
+  $out = array('amount' => 0,'description' => 'no applicable discounts');
+  $query = new EntityFieldQuery();
+  $entities = $query->entityCondition('entity_type', 'node')
+                    ->propertyCondition('status', 1)
+                    ->entityCondition('bundle', 'discount')
+                    ->fieldCondition('field_time_period','value',$udate,'<=')
+                    ->fieldCondition('field_time_period','value2',$udate,'>=')
+                    ->fieldCondition('field_time_of_day','value',$tod)
+                    ->fieldOrderBy('field_discount_percentage','value','ASC')
+                    ->execute();
+  $out = array();
+  if (isset($entities['node'])) $nodes = node_load_multiple(array_keys($entities['node']));
+
+  foreach ($nodes as $node)
+  {
+    $out['description'] = $node->title;  
+    $out['amount'] = isset($node->field_discount_percentage['und']) ? $node->field_discount_percentage['und'][0]['value'] : 0;  
+  }
+  return $out;
+
+}
+function martins_planner_load_entities($bundle, $full=FALSE)
+{
+  $query = new EntityFieldQuery();
+  $entities = $query->entityCondition('entity_type', 'node')
+                    ->propertyCondition('status', 1)
+                    ->entityCondition('bundle', $bundle)
+                    ->propertyOrderBy('title', 'ASC')
+                    ->execute();
+  $out = array();
+  if (isset($entities['node'])) $nodes = node_load_multiple(array_keys($entities['node']));
+  foreach ($nodes as $node)
+  {
+    if ($full)
+    {
+      $out[$node->nid] = $node;
+    }
+    else
+    {
+      $out[$node->nid] = $node->title;  
+    }
+    
+  }
+  return $out;
+}
+function martins_planner_load_tagged_entities($bundle,$tid = 8)
+{
+  $nids = taxonomy_select_nodes($tid);
+  $query = new EntityFieldQuery();
+  $entities = $query->entityCondition('entity_type', 'node')
+                    ->propertyCondition('status', 1)
+                    ->entityCondition('bundle', $bundle)
+                    ->propertyOrderBy('title', 'ASC')
+                    ->fieldCondition('field_type','tid',$tid)
+                    ->execute();
+  $out = array();
+  if (isset($entities['node'])) $nodes = node_load_multiple(array_keys($entities['node']));
+  foreach ($nodes as $node)
+  {
+    $out[$node->nid] = $node->title;
+  }
+  return $out;
+
+
+/*
+  foreach ($nodes as $node)
+  {
+    $out[$node->nid] = $node->title;
+  }
+  return $out;
+*/
+}
+function martins_planner_list_taxonomies()
+{
+
+  $raw = taxonomy_get_vocabularies();
+  foreach($raw as $tax)
+  {
+    $out[$tax->machine_name] = array('vid'=>$tax->vid,'display'=>$tax->name);
+  }
+  return $out;
+}
+function martins_planner_pricing_matrix()
+{
+  /*
+    pricing elements:
+    date/ time discounts
+
+    in matrix:
+    entree level(type, location, count) includes base +
+    beverage service(type, location, count/hours)
+    display(type, location, count)
+    HDO(type, location, count)
+    music(type, location)
+    cake(type, location, count)
+    options(type, location, count)
+    total (recite date/time discounts)
+  */
+
+  $matrix = array();
+  $cts = array('entree_price','beverage_price','display_price','option_price','music_price','cake_price','hdo_price');
+  //always TIDs, except when NIDs
+  //$matrix[type][location][option type][type tid] = price
+  //$matrix[wedding][west][entree_pricing][2] = 2.00
+  $query = new EntityFieldQuery();
+  $entities = $query->entityCondition('entity_type', 'node')
+                    ->propertyCondition('status', 1)
+                    ->entityCondition('bundle', $cts,'in')
+                    ->execute();
+  if (isset($entities['node'])) $nodes = node_load_multiple(array_keys($entities['node']));
+  if ($nodes)
+  {
+    foreach ($nodes as $node)
+    {
+      $type = $node->field_type['und'][0]['tid'];
+      $location = $node->field_location['und'][0]['tid'];
+      $price = $node->field_price['und'][0]['value'];
+
+      switch ($node->type)
+      {
+        case 'entree_price':
+          $level = $node->field_entree_level['und'][0]['tid'];
+          $matrix[$type][$location]['entree_price'][$level] = $price;
+          //highest price gets tagged as base price
+          if ($price > $matrix[$type][$location]['entree_price']['base_price']) 
+          {
+            $matrix[$type][$location]['entree_price']['base_price']= $price;
+            $matrix[$type][$location]['entree_price']['base_tid'] = $level;
+          }
+          break;
+        case 'beverage_price':
+          $level = isset($node->field_beverage_level['und']) ? $node->field_beverage_level['und'][0]['tid'] : 0;
+          $hours = isset($node->field_hours['und']) ? $node->field_hours['und'][0]['value'] : 0;
+          if ($level)
+          {
+            $matrix[$type][$location]['beverage_price'][$level] = $price;  
+          }
+          else
+          {
+            $matrix[$type][$location]['beverage_price'][$hours] = $price;  
+          }
+          break;
+        case 'display_price':
+          $level = $node->field_option_display['und'][0]['tid'];
+          $matrix[$type][$location]['display_price'][$level] = $price;  
+          break;
+        case 'hdo_price':
+          $level = $node->field_option_hod['und'][0]['tid'];
+          $matrix[$type][$location]['hdo_price'][$level] = $price;  
+          break;
+        case 'option_price':
+          $mode = $node->field_pricing_mode['und'][0]['value'];
+          $matrix[$type][$location]['option_price'][$node->nid]['price'] = $price;  
+          $matrix[$type][$location]['option_price'][$node->nid]['mode'] = $mode;  
+          break;
+        case 'cake_price':
+        case 'music_price':
+          $matrix[$type][$location][$node->type][$node->nid]['price'] = $price;  
+        
+          break;
+      }
+
+
+
+    }
+  }
+  
+  return $matrix;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

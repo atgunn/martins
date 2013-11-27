@@ -1,0 +1,462 @@
+<?php
+/**
+* Implements hook_init()
+*/
+function display_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function display_permission()
+{
+  return array(
+    'access display manager' =>  array(
+      'title' => t('Access Display Manager'),
+	 		'description' => t('Permission for accessing the display manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+function display_menu()
+{
+  $items['display/add'] = array(
+    'title' => 'Add Display',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('display_add'),
+    'access arguments' => array('access display manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['display/list'] = array(
+    'title' => 'Display Manager',
+    'page callback' => 'display_list',
+    'access arguments' => array('access display manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['display/edit'] = array(
+    'title' => 'Edit Display',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('display_edit'),
+    'access arguments' => array('access display manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['display/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'display_updatestatus',
+    'access arguments' => array('access display manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['display/delete'] = array(
+    'title' => 'Delete Display',
+    'page callback' => 'display_delete',
+    'access arguments' => array('access display manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['display_view'] = array(
+		'title' => 'Display view',
+		'description' => 'Front end side view',
+		'page callback' => 'display_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['display/recordadd'] = array(
+	'title' => 'Display Record Add',
+	'page callback' => 'display_recordadd',
+	'access arguments' => array('access content'),
+	'access callback' => TRUE,
+	'type' => MENU_CALLBACK,
+	);
+	
+	
+	return $items;
+}
+
+function display_recordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['display'] = $_POST;
+
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 10;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('item_view');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function display_view()
+{	
+		return include('display.php');
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 9))
+	{
+		return include('display.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 9))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+			
+			case 4:
+				drupal_goto('entry_view');
+			break;
+			
+			case 5:
+				drupal_goto('entry_preview');
+			break;
+			
+			case 6:
+				drupal_goto('beverage_view');
+			break;
+			
+			case 7:
+				drupal_goto('beverage_nextview');
+			break;
+			
+			case 8:
+				drupal_goto('hors_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+/*
+** Delete Display Code
+*/
+function display_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM display where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Display Status Code
+*/
+function display_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update display set status = !status where id={$_GET['id']}");
+		
+	header('Location: list');
+}
+
+/*
+** Edit Display Form Code
+*/
+function display_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM display WHERE id = {$_GET['id']}");
+		$row = array();
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['displayName'] = array(
+		'#title' => t('Display Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['displayName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the Display'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Display.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Display'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Display Code
+*/
+function display_edit_submit($form, &$form_state)
+{
+	$displayName  = $form_state['values']['displayName'];
+	$price 			  = $form_state['values']['price'];
+	$image 				= $form_state['values']['image'];
+	$description 	= $form_state['values']['description'];
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+	$id 					= $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image']  == 'image/gif')	 ||
+				($_FILES['files']['type']['image']  == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] 	== 'image/jpg')  || 
+				($_FILES['files']['type']['image'] 	== 'image/pjpeg')||
+				($_FILES['files']['type']['image'] 	== 'image/x-png')||
+				($_FILES['files']['type']['image'] 	== 'image/png' ))
+		{
+			$image = drupal_get_path('module','display').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE display SET displayName='{$displayName}',price='{$price}',image='{$image}', description"
+										."='{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+	$form_state['redirect'] = 'display/list';	
+}
+
+
+/*
+** Display List Code
+*/
+function display_list($arg = 0)
+{
+	$result = db_query('select * from display order by orderno');
+  $rows = array();
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		$rows[$i]['price'] = '$'.$record->price;
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','display').'/images/active.png', 
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'display/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','display').'/images/inactive.png', 
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'display/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit'] = l('Edit', 'display/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'display/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(
+			t('Id'),
+			t('Display Name'),
+			t('Price'),
+			t('Image'),
+			t('Description'),
+			t('Status'),
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+	
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Display', 'display/add');
+}
+
+/*
+** Display Add Form Code
+*/
+function display_add($form, &$form_submit)
+{
+	$form['displayName'] = array(
+		'#title' => t('Display Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the Display'),
+	);
+	
+	$form['price'] = array(
+		'#title' => t('Price'),
+		'#type' => 'textfield',
+		'#default_value' => $row['price'],
+		'#required' => TRUE,
+		'#description' => t('Price of the item'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Display Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current display.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Display'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Display Add Code
+*/
+function display_add_submit($form, &$form_state)
+{
+	$displayName 	= $form_state['values']['displayName'];
+	$price 			  = $form_state['values']['price'];
+	$image 				= $form_state['values']['image'];
+	$description 	= $form_state['values']['description'];
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','display').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO display(displayName,price,image,description,status,orderno) VALUES( '{$displayName}',"
+										 ."'{$price}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'display/list';	
+}

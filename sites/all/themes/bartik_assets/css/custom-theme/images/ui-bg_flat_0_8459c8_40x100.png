@@ -1,0 +1,210 @@
+/************************************************************************************************/
+/****************************************** custom **********************************************/
+/************************************************************************************************/
+
+/****************** Welcome Page ********************/
+.fl{float:left;}
+.fr{float:right;}
+.w100{width:100%;}
+
+#welcomeForm{width:600px; border:3px solid #E6E6E6; padding-top:10px;}
+#welcomeForm p{padding:0 20px;}
+#welcomeForm p.pcont{clear:both;  margin:10px 0; float:left;}
+#welcomeForm p .mr65{margin-right:65px;}
+#welcomeForm p .mr40{margin-right:40px;}
+
+#welcomeForm p .lblname{
+	display: block;
+    float: left;
+    font-size: 0.9em;
+    font-weight: bold;
+    padding-top: 8px;
+    width: 200px;
+}
+#welcomeForm p .name{
+	background: none repeat scroll 0 0 white;
+	border: 1px solid #D7D7D7;
+	box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.07) inset;
+	padding: 8px 10px;
+	width: 320px;
+	border-radius: 2px 2px 2px 2px;
+	
+	/*filter: progid:DXImageTransform.Microsoft.Blur(PixelRadius=3,MakeShadow=true,ShadowOpacity=0.30);
+	-ms-filter: "progid:DXImageTransform.Microsoft.Blur(PixelRadius=1,MakeShadow=true,ShadowOpacity=0.10)";
+	zoom: 1;*/
+}
+#welcomeForm p .s2{
+	width:110px;
+	background: none repeat scroll 0 0 white;
+	border: 1px solid #D7D7D7;
+	box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.07) inset;
+	padding: 8px 10px;
+	border-radius: 2px 2px 2px 2px;
+	
+}
+
+.pricing{
+	color: gray;
+	font-size: 0.75em;
+	font-style: italic;
+	margin-top: -10px;
+	padding-left: 200px !important;
+	text-align: center;
+	clear:both;
+}
+
+#radio-evening{margin-left:200px;}
+.subavailable{
+	width:560px;
+	float:left;
+	border-bottom: 3px solid #E6E6E6;
+	border-top: 3px solid #E6E6E6;
+	color: #733930;
+	font-size: 0.9em;
+	font-weight: bold;
+	padding: 20px !important;
+	text-align: center;
+}
+/********** Last 3 btn ************/
+.startOver{
+	margin: -16px 0 0;
+	padding: 16px 0 !important;
+	width: 49%;	
+	float:left;	
+}
+.red1{
+	left: 12px;
+	position: relative;
+	background-color: #BC484F;
+	background-image: linear-gradient(#BC484F, #6E382E);
+	border: medium none;
+	color: white;
+	padding: 11px;
+	
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	behavior: url(/pie/PIE.htc);
+	
+	filter:
+  progid:DXImageTransform.Microsoft.gradient(startColorstr=#BC484F,endColorstr=#6E382E); 
+}
+
+.prev-next{
+	border-left: 3px solid #E6E6E6;
+	float: right;
+	margin: -16px 0 0;
+	padding: 16px 0 !important;
+	width: 49%
+}
+.prev-next .pn{
+	background-color: #875CCC;
+	background-image: linear-gradient(#875CCC, #532792);
+	display: inline-block;
+	margin: 0 12px;
+	vertical-align: baseline;
+	width: 115px;
+	border: medium none;
+	border-radius: 5px 5px 5px 5px;
+	color: white;
+	padding: 11px;
+	
+	filter:
+  progid:DXImageTransform.Microsoft.gradient(startColorstr=#875CCC,endColorstr=#532792); 
+}
+
+/*********************** Discount ***************************/
+
+.form{border:3px solid #E6E6E6; width:595px;}
+
+.thead{
+	background: none repeat scroll 0 0 #F9F6FC;
+	border-bottom: 3px solid #E6E6E6;
+	font-weight: bold;
+	font-size: 0.9em;
+	list-style-type: none;
+	margin: 0 !important;
+	padding: 0 !important;
+	width:595px;
+	float:left;
+}
+.thead li{
+	width: 22%;
+	line-height: 70px;
+	font-weight: bold;
+	text-align: center;
+	
+	float: left;
+	position: relative;
+}
+
+.tbody{
+	font-size: 0.9em;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+.tbody li{
+	line-height: 70px;
+    width: 25%;
+		display: block;
+    float: left;
+    position: relative;
+    text-align: center;
+}
+.tbody li.redfont{color: #AC4448; font-weight:bold;}
+.tbody li span{
+	color: gray;
+    display: block;
+    position: absolute;
+    top: 20px;
+    width: 100%;
+}
+
+.downloadp{
+	text-align: right;
+	border-bottom: 3px solid #E6E6E6;
+	border-top: 3px solid #E6E6E6;
+	color: #733930;
+	font-size: 0.9em;
+	font-weight: bold;
+	padding: 20px;
+}
+
+/***************** Entrees************************/
+
+.k-tabs{
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+.k-tabs li{
+	display: block;
+    float: left;
+    height: 55px;
+    line-height: 55px;
+    margin-right: 5px;
+    text-align: center;
+    width: 140px;
+}
+.k-tabs li a{
+	background: none repeat scroll 0 0 #E6E6E6;
+    color: gray;
+    display: block;
+    text-decoration: none;
+}
+.k-tabs li a:hover{
+	-moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    background: none repeat scroll 0 0 white;
+    border-color: #E6E6E6 #E6E6E6 -moz-use-text-color;
+    border-image: none;
+    border-style: solid solid none;
+    border-width: 3px 3px medium;
+    color: #542893;
+    height: 58px;
+    position: relative;
+    top: -3px;
+}

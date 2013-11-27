@@ -1,0 +1,6 @@
+name = Martin's Planner
+description = Planner functionality for Martin's catering
+package = Martin's Pricing
+core = 7.x
+version = 7.x
+

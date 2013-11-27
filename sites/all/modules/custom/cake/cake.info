@@ -1,0 +1,6 @@
+name = Cake Manager
+description = This module For Cake Manager
+package = Developer
+core = 7.x
+version = 7.x
+files[] = images/active.png

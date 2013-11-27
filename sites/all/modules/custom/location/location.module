@@ -1,0 +1,526 @@
+<?php
+/**
+* Implements hook_init()
+*/
+function location_init()
+{ 
+}
+
+/**
+* Implements hook_permission()
+*/
+function location_permission()
+{
+  return array(
+    'access location manager' =>  array(
+      'title' => t('Access Location Manager'),
+	 		'description' => t('Permission for accessing the location manager module.'),
+    ),
+  );
+}
+
+/**
+* Implements hook_menu()
+*/
+function location_menu()
+{
+  $items['location/add'] = array(
+    'title' => 'Add Location',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('location_add'),
+    'access arguments' => array('access location manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['location/list'] = array(
+    'title' => 'Location Manager',
+    'page callback' => 'location_list',
+    'access arguments' => array('access location manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['location/edit'] = array(
+    'title' => 'Edit Location',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('location_edit'),
+    'access arguments' => array('access location manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['location/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'location_updatestatus',
+    'access arguments' => array('access location manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['location/delete'] = array(
+    'title' => 'Delete Location',
+    'page callback' => 'location_delete',
+    'access arguments' => array('access location manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['location_view'] = array(
+		'title' => 'Location view',
+		'description' => 'Front end side view',
+		'page callback' => 'location_view',
+		'access callback' => TRUE,
+	);
+	
+	$items['location/recordadd'] = array(
+		'title' => 'Location Record Add',
+		'page callback' => 'location_recordadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	return $items;
+}
+
+function location_recordadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['location'] = $_POST;
+		//echo '<pre>'; print_r($_SESSION['location']); exit;
+		if (isset($_SESSION['step']))
+			$_SESSION['step'] = 4;
+	}
+	
+	if (isset($_SESSION['step']))
+		drupal_goto('entry_view');
+	else
+		drupal_goto('event_view');
+	
+}
+
+function location_view()
+{	
+return include('location.php');
+	if (isset($_SESSION['step']) && $_SESSION['step'] == 3)
+	{
+		$_SESSION['step'] = 4;
+		return include('location.php');
+	}
+	
+	if (isset($_SESSION['step']) && ($_SESSION['step'] >= 4))
+	{
+		return include('location.php');
+	}
+	else if (isset($_SESSION['step']) && ($_SESSION['step'] < 4))
+	{
+		switch($_SESSION['step'])
+		{
+			case 1:
+				drupal_goto('event_view');
+			break;
+			
+			case 2:
+				drupal_goto('welcome_bookview');
+			break;
+			
+			case 3:
+				drupal_goto('discount_view');
+			break;
+		}
+	}
+	else
+	{
+		drupal_goto('event_view');
+	}
+}
+
+/*
+** Delete Location Code
+*/
+function location_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM location where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Update Location Status Code
+*/
+function location_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update location set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit Location Form Code
+*/
+function location_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM location WHERE id = {$_GET['id']}");
+		$row = array();
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['locationName'] = array(
+		'#title' => t('Location Name'),
+		'#type' => 'textfield',
+		'#default_value' => $row['locationName'],
+		'#required' => TRUE,
+		'#description' => t('Name of the Location'),
+	);
+	
+	$form['address'] = array(
+		'#title' => t('Address'),
+		'#type' => 'textarea',
+		'#default_value' => $row['address'],
+		'#cols' => 50,
+		'#rows' => 5,
+		'#required' => TRUE,
+	);
+	
+	$form['city'] = array(
+		'#title' => t('City'),
+		'#type' => 'textfield',
+		'#default_value' => $row['city'],
+		'#required' => TRUE,
+		'#description' => t('Enter city name'),
+	);
+	
+	$form['state'] = array(
+		'#title' => t('State'),
+		'#type' => 'textfield',
+		'#default_value' => $row['state'],
+		'#required' => TRUE,
+		'#description' => t('Name of the state'),
+	);
+	
+	$form['pinCode'] = array(
+		'#title' => t('Pin Code'),
+		'#type' => 'textfield',
+		'#default_value' => $row['pinCode'],
+		'#required' => TRUE,
+		'#description' => t('Enter Pin Code'),
+	);
+		
+	$form['phoneNumber'] = array(
+		'#title' => t('Phone Number'),
+		'#type' => 'textfield',
+		'#default_value' => $row['phoneNumber'],
+		'#required' => TRUE,
+		'#description' => t('Phone-Contact Number'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+			
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Location.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Location'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Location Code
+*/
+function location_edit_submit($form, &$form_state)
+{
+	$locationName = addslashes($form_state['values']['locationName']);
+	$address 			= addslashes($form_state['values']['address']);
+	$city 				= addslashes($form_state['values']['city']);
+	$state 			  = addslashes($form_state['values']['state']);
+	$pinCode 			= $form_state['values']['pinCode'];
+	$phoneNumber 	= $form_state['values']['phoneNumber'];
+	$image 				= $form_state['values']['image'];
+	$description 	= addslashes($form_state['values']['description']);
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+	$id 					= $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image']  == 'image/gif')	 ||
+				($_FILES['files']['type']['image']  == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] 	== 'image/jpg')  || 
+				($_FILES['files']['type']['image'] 	== 'image/pjpeg')||
+				($_FILES['files']['type']['image'] 	== 'image/x-png')||
+				($_FILES['files']['type']['image'] 	== 'image/png' ))
+		{
+			$image = drupal_get_path('module','location').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("UPDATE location SET locationName='{$locationName}',address='{$address}',city= '{$city}',"
+										."state='{$state}',pinCode={$pinCode},phoneNumber='{$phoneNumber}', image='{$image}',"
+										."description='{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+							
+									
+	$form_state['redirect'] = 'location/list';	
+}
+
+
+/*
+** Location List Code
+*/
+function location_list($arg = 0)
+{
+	$result = db_query('select * from location order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','location').'/images/active.png', 
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'location/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','location').'/images/inactive.png', 
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'location/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+		
+		$rows[$i]['edit'] = l('Edit', 'location/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'location/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(
+			t('Id'),
+			t('Location Name'),
+			t('Address'),
+			t('City'),
+			t('State'),
+			t('Pin Code'),
+			t('Phone Number'),
+			t('Image'),
+			t('Description'),
+			t('Status'),
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+	
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Location', 'location/add');
+}
+
+/*
+** Location Add Form Code
+*/
+function location_add($form, &$form_submit)
+{
+	$form['locationName'] = array(
+		'#title' => t('Location Name'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the Location'),
+	);
+	
+	$form['address'] = array(
+		'#title' => t('Address'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+		'#required' => TRUE,
+	);
+	
+	$form['city'] = array(
+		'#title' => t('City'),
+		'#type' => 'textfield',
+		'#default_value' => $row['city'],
+		'#required' => TRUE,
+		'#description' => t('Enter city name'),
+	);
+	
+	$form['state'] = array(
+		'#title' => t('State'),
+		'#type' => 'textfield',
+		'#default_value' => $row['state'],
+		'#required' => TRUE,
+		'#description' => t('Name of the state'),
+	);
+	
+	$form['pinCode'] = array(
+		'#title' => t('Pin Code'),
+		'#type' => 'textfield',
+		'#default_value' => $row['pinCode'],
+		'#required' => TRUE,
+		'#description' => t('Enter Pin Code'),
+	);
+	
+	$form['phoneNumber'] = array(
+		'#title' => t('Phone Number'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Phone-Contact Number'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Location Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status of the current location.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Location'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Location Add Code
+*/
+function location_add_submit($form, &$form_state)
+{
+	$locationName = addslashes($form_state['values']['locationName']);
+	$address 			= addslashes($form_state['values']['address']);
+	$city 				= addslashes($form_state['values']['city']);
+	$state 			  = addslashes($form_state['values']['state']);
+	$pinCode 			= $form_state['values']['pinCode'];
+	$phoneNumber 	= $form_state['values']['phoneNumber'];
+	$image 				= $form_state['values']['image'];
+	$description 	= addslashes($form_state['values']['description']);
+	$status 			= $form_state['values']['status'];
+	$orderno 			= $form_state['values']['orderno'];
+
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','location').'/images/'.$_FILES['files']['name']['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO location(locationName,address,city,state,pinCode,phoneNumber,image,description,"
+										."status,orderno) VALUES('{$locationName}', '{$address}','{$city}','{$state}','{$pinCode}',"
+										."'{$phoneNumber}','{$image}', '{$description}',{$status},{$orderno})");
+
+	$form_state['redirect'] = 'location/list';	
+}

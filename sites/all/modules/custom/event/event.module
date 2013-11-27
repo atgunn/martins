@@ -1,0 +1,447 @@
+<?php
+session_start();
+/**
+* Implements hook_init()
+*/
+function event_init()
+{
+	
+}
+
+/**
+* Implements hook_permission()
+*/
+function event_permission()
+{
+  return array(
+    'access event manager' =>  array(
+      'title' => t('Access Event Manager'),
+	 		'description' => t('Permission for accessing the event manager module.'),
+    ),
+  );
+}
+
+
+/**
+* Implements hook_menu()
+*/
+function event_menu()
+{
+  $items['event/add'] = array(
+    'title' => 'Add Event',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('event_add'),
+    'access arguments' => array('access event manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['event/list'] = array(
+    'title' => 'Event Manager',
+    'page callback' => 'event_list',
+    'access arguments' => array('access event manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['event/edit'] = array(
+    'title' => 'Edit Event',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('event_edit'),
+    'access arguments' => array('access event manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['event/updatestatus'] = array(
+    'title' => 'Toggle Status',
+    'page callback' => 'event_updatestatus',
+    'access arguments' => array('access event manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['event/delete'] = array(
+    'title' => 'Delete Event',
+    'page callback' => 'event_delete',
+    'access arguments' => array('access event manager'),
+    'expanded' => TRUE,
+  );
+	
+	$items['event_view'] = array(
+		'title' => 'Event view',
+		'description' => 'Front end side view',
+		'page callback' => 'event_view',
+		'access callback' => TRUE,
+	);
+	$items['event/viewadd'] = array(
+		'title' => 'Event Book Add',
+		'page callback' => 'event_viewadd',
+		'access arguments' => array('access content'),
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	
+	$items['common_page'] = array(
+		'title' => 'Comman view',
+		'description' => 'Front end side view',
+		'page callback' => 'common_page',
+		'access callback' => TRUE,
+	);
+	return $items;
+}
+
+
+function common_page()
+{	
+	unset($_SESSION['event']);
+	unset($_SESSION['welcome']);
+	unset($_SESSION['location']);
+	unset($_SESSION['entry']);
+	unset($_SESSION['preentry']);
+	unset($_SESSION['beverage']);
+	unset($_SESSION['prebeverage']);
+	unset($_SESSION['hors']);
+	unset($_SESSION['display']);
+	unset($_SESSION['cake']);
+	unset($_SESSION['music']);
+	drupal_goto('event_view');
+}
+
+function event_viewadd()
+{	
+	if ($_POST)
+	{
+		$_SESSION['event'] = $_POST;
+		$_SESSION['step'] = 1;
+	}
+	drupal_goto('welcome_bookview');
+}
+/*
+** Events View Code For Front-End Side
+*/
+function event_view()
+{
+	return include('event.php');
+}
+
+/*
+** Event Delete Code
+*/
+function event_delete()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("DELETE FROM event_type where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Event Update Status Code
+*/
+function event_updatestatus()
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+		$result = db_query("update event_type set status = !status where id={$_GET['id']}");
+	header('Location: list');
+}
+
+/*
+** Edit Event Form Code
+*/
+function event_edit($form, &$form_submit)
+{
+	if (isset($_GET['id']) && !empty($_GET['id']))
+	{
+		$result = db_query("SELECT * FROM event_type WHERE id = {$_GET['id']}");
+		$row = array();
+
+		foreach ($result as $record)
+		{
+			$row = (array)$record;
+		}
+	}
+	
+	$typeValue = array('Private','Commercial');
+	
+	$form['id'] = array(
+		'#value' => $row['id'],
+		'#type' => 'hidden',
+	);
+	
+	$form['type'] = array(
+		'#title' => t('Event Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $row['type'],
+		'#description' => t('Select parent page for the current one.'),
+	);
+	
+	$form['title'] = array(
+		'#title' => t('Event Title'),
+		'#type' => 'textfield',
+		'#default_value' => $row['title'],
+		'#required' => TRUE,
+		'#description' => t('Name of the event'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+		'#default_value' => $row['image'],
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+	
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#default_value' => $row['description'],
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $row['status'],
+		'#description' => t('Select status for the current Event.'),
+	);
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#default_value' => $row['orderno'],
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Event'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	return $form;
+}
+
+/*
+** Edit Event Code
+*/
+function event_edit_submit($form, &$form_state)
+{
+	$type 			 = $form_state['values']['type'];
+	$title 			 = $form_state['values']['title'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	$id 				 = $form_state['values']['id'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES['files']['error'] ['image'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','event').'/images/'.$_FILES['files']["name"]['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+
+	$result = db_query("UPDATE event_type SET type={$type},title='{$title}',image='{$image}',description="
+										."'{$description}',status={$status},orderno={$orderno} WHERE id = {$id}");
+	$form_state['redirect'] = 'event/list';	
+}
+
+/*
+**  List od Events Code
+*/
+function event_list($arg = 0)
+{
+	$result = db_query('select * from event_type order by orderno');
+  $rows = array();
+	
+	$i=0;
+	foreach ($result as $record) 
+	{ 
+	
+		if ($record->type == 0)
+			$record->type = 'Private Party';
+		else
+			$record->type = 'Commercial Meeting';
+		
+		$rows[] = array_map('check_plain', (array)$record);
+		
+		//Make active value as standard icon
+		$rows[$i]['status'] = $rows[$i]['status'] == 1 
+			? l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','event').'/images/active.png', 
+							'alt' => 'Active image', 
+							'title' => 'Active',
+						)
+					),
+					'event/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				)
+				
+			: l(
+					theme(
+						'image', 
+						array(
+							'path' => drupal_get_path('module','event').'/images/inactive.png', 
+							'alt' => 'Inactive image', 
+							'title' => 'Inactive',
+						)
+					),
+					'event/updatestatus',
+					array(
+						'html' => TRUE, 
+						'query' => array('id' => $rows[$i]['id'])
+					)
+				);
+			
+		$rows[$i]['image'] 	= l(
+			theme(
+				'image', 
+				array(
+					'path'   => $rows[$i]['image'], 
+					'alt'    => 'Inactive image', 
+					'title'  => 'Inactive',
+					'height' => '50px',
+					'width'  => '50px',
+				 )
+			),
+			$rows[$i]['image'],
+			array('html' => TRUE)
+		);
+			
+		$rows[$i]['edit'] = l('Edit', 'event/edit', array('query' => array('id' => $rows[$i]['id'])));
+			
+		$rows[$i]['delete'] = l('Delete', 'event/delete', array('query' => array('id' => $rows[$i]['id'])));
+	
+		$i++;
+	}
+	
+	$header = array(
+			t('Id'), 
+			t('Event Type'), 
+			t('Title'), t('Image'),
+			t('Event Description'),
+			t('Status'),
+			t('Order'),
+			t('Date'),
+			t('Edit'),
+			t('Delete')
+	);
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  return $output .= l('Add Event', 'event/add');
+}
+
+/*
+**  Add Event Form Code
+*/
+function event_add($form, &$form_submit)
+{
+	/** ----Event Type -----
+		0 = 'Private Party'
+		1 = 'Commercial Meeting'
+	**/
+	$typeValue = array('Private Party','Commercial Meeting');
+	$form['type'] = array(
+		'#title' => t('Event Type'),
+		'#type' => 'select',
+		'#options' => $typeValue,
+		'#default_value' => $typeValue[0],
+		'#description' => t('Select parent page for the current one.'),
+	);
+	
+	$form['title'] = array(
+		'#title' => t('Event Title'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Name of the evet'),
+	);
+	
+	$form['image'] = array(
+		'#title' => t('Image'),
+		'#type' => 'file',
+	//	'#required' => TRUE,
+		'#description' => t('Click "Chose File" to select an image to upload.'),
+	);
+
+	$form['description'] = array(
+		'#title' => t('Description'),
+		'#type' => 'textarea',
+		'#cols' => 50,
+		'#rows' => 5,
+	);
+	
+	$status = array('False','True');
+	$form['status'] = array(
+		'#title' => t('Event Status'),
+		'#type' => 'select',
+		'#options' => $status,
+		'#default_value' => $status[1],
+		'#description' => t('Select status for the current one.'),
+	);
+	
+	$form['orderno'] = array(
+		'#title' => t('Order'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+		'#description' => t('Enter order of the Event'),
+	);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	
+	return $form;
+}
+
+/*
+** Add Event Code
+*/
+function event_add_submit($form, &$form_state)
+{
+	$type 			 = $form_state['values']['type'];
+	$title 			 = $form_state['values']['title'];
+	$image 			 = $form_state['values']['image'];
+	$description = $form_state['values']['description'];
+	$status 		 = $form_state['values']['status'];
+	$orderno 		 = $form_state['values']['orderno'];
+	
+	if ($_FILES['files']['error']['image'] > 0)
+  {
+  	echo 'Error: ' . $_FILES["file"]['error'] . '<br>';
+  }
+	else
+  {
+		if (($_FILES['files']['type']['image'] == 'image/gif')  ||
+				($_FILES['files']['type']['image'] == 'image/jpeg') || 
+				($_FILES['files']['type']['image'] == 'image/jpg')  || 
+				($_FILES['files']['type']['image'] == 'image/pjpeg')||
+				($_FILES['files']['type']['image'] == 'image/x-png')||
+				($_FILES['files']['type']['image'] == 'image/png' ))
+		{
+			$image = drupal_get_path('module','event').'/images/'.$_FILES['files']["name"]['image'];
+			move_uploaded_file($_FILES['files']['tmp_name']['image'],$image);
+		}
+	}
+	
+	$result = db_query("INSERT INTO event_type(type,title,image,description,status,orderno) VALUES({$type},"
+						."'{$title}','{$image}', '{$description}','{$status}','{$orderno}')");
+
+	$form_state['redirect'] = 'event/list';	
+}
+
+
