@@ -4,7 +4,20 @@
     <?php print render($page['header']); ?>
   </div>
 </header>
+<script type="text/javascript">
+ 
+jQuery(document).ready(function() { 
+var page_image = jQuery(".k-top .content .field-name-field-page-image" ).html();
+var page_image_title = jQuery(".k-top .content .field-name-field-page-image-title" ).html();
+var page_image_desc = jQuery(".k-top .content .field-name-field-page-image-desc" ).html();
+jQuery('.contextual-links-region .content #welcomepageid').append(page_image);	
+jQuery('.contextual-links-region .content #welcomepageid').append(page_image_title);
+jQuery('.contextual-links-region .content #welcomepageid').append(page_image_desc);
+jQuery("#martins-planner-options-form .flickrgallery-image").colorbox({ width:"650px", height:"80%"});
+//jQuery('#content-messages').delay(15000).fadeOut();
 
+});
+</script>
   <?php if ($main_menu): ?>
     <nav>
     <?php print theme('links__system_main_menu', array(

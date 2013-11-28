@@ -2832,7 +2832,6 @@ height:16px;
 
 .sc{color:#4C4C4C;}
 
-/******* Written by Majid Saleem *******/
 .rightsblock{
 	width: 340px;
 	float: right;
@@ -2849,4 +2848,102 @@ height:16px;
 
 .rightsblock #dimgdesc{
 	width: 100%;
+}
+
+.webform-client-form #webform-component-guest-options label
+{
+	display:none !important;
+}
+.webform-client-form #webform-component-guest-options .styled
+{
+	position:absolute;
+	margin:-90px 0 0 337px;	
+}
+/*.content .field-name-field-page-image, .content .field-name-field-page-image-title, .content .field-name-field-page-image-desc
+{
+	display:none;	
+}*/
+.field-name-field-page-image img
+{
+	/*width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;*/
+	display:none;
+}
+.field-name-field-page-image .field-label, .field-name-field-page-image-title .field-label, .field-name-field-page-image-desc .field-label
+{
+	display:none;	
+}
+.field-name-field-page-image-title .field-items .field-item
+{
+	/*font-weight:bold;	*/
+	display:none;
+}
+.field-name-field-page-image-desc .field-items .field-item
+{
+	/*font-weight:bold;	*/
+	display:none;
+}
+/*.contextual-links-region .content img
+{
+	display:none;	
+}
+.content .field-name-field-page-image
+{
+	position:absolute;	
+}*/
+#block-views-discounts-block .view-footer
+{
+	padding:0px;	
+	border:none;
+}
+#block-views-discounts-block .view-footer .view-footer
+{
+	border: 3px solid #E5E6E0;
+    padding: 10px;
+}
+#block-views-discounts-block .view-footer .view-footer .k-form-right a.btn-so
+{
+	border-right:3px solid #E5E6E0;
+	padding-right:150px;
+}
+
+.form-type-radio label, .form-type-checkbox label
+{
+	margin-left:0px !important;	
+}
+#welcomepageid .field-label
+{
+	display:none;
+}
+#welcomepageid .field-items img
+{
+	width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;
+}
+/*#welcomepageid .field-items .field-item
+{
+	font-weight:bold;	
+}*/
+.contextual-links-region .content .mainimg
+{
+	display:none;
+}
+#block-block-5 #welcomepageid .field-items img
+{
+	margin-top:40px;
+}
+.contextual-links-region .rightsblock img
+{
+	display:block !important;
+	margin-top:52px;
+}
+#block-martins-planner-fm-event-options #martins-planner-options-form table
+{
+	clear:both;
 }

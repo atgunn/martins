@@ -468,10 +468,11 @@ function martins_planner_options_form($form, &$form_state)
 
   foreach($other_options as $nid=>$node)
   {
+  	global $base_url;
     $cost = (isset($node->field_price['und'])) ? $node->field_price['und'][0]['value'] : 0;
     $photo = (isset($node->field_image['und'])) ? file_create_url($node->field_image['und'][0]['uri']) : '';
     $photo_ref = "";
-    if (strlen($photo))$photo_ref = "<a href='$photo' class='flickrgallery-image lightbox2' rel=lightbox><img src=/sites/default/files/images/photo-icon></a>";
+    if (strlen($photo))$photo_ref = "<a href='$photo' style='width:600px; height:450px;' class='flickrgallery-image colorbox lightbox2 init-colorbox-processed cboxElement' rel=lightbox><img src=$base_url/sites/default/files/images/photo-icon.png></a>";
     $options[$nid] = array(
       'item' => $node->title,
       'cost' => "$ $cost",
@@ -621,7 +622,13 @@ function martins_planner_location_form($form, &$form_state)
     $out .= "</div>";
     $url = "/sites/default/files/images/Waterlilies.jpg";
     if (isset($location->field_image['und'])) $url = file_create_url($location->field_image['und'][0]['uri']);
-    $switch .= "case '$location->tid': locimage='$url'; break; \n";
+	
+	if (isset($location->field_locations_image_title['und'])) $dimgtitle = $location->field_locations_image_title['und'][0]['value'];
+	if (isset($location->field_locations_image_desc['und'])) $dimgdesc = $location->field_locations_image_desc['und'][0]['value'];
+	
+	$switch .= "case '$location->tid': locimage='".$url."'; dimgtitle='".addslashes($dimgtitle)."'; dimgdesc='".addslashes($dimgdesc)."';break; \n";
+	
+//    $switch .= "case '$location->tid': locimage='$url'; break; \n";
     $locations[$location->tid] = $out;
   }
   $switch .= "}";
@@ -629,6 +636,8 @@ function martins_planner_location_form($form, &$form_state)
   $js = "function swapImage(tid){
     $switch\n
     jQuery('#event-img').attr('src',locimage);
+	jQuery('#dimgdesc').html(dimgdesc);
+	jQuery('#dimgtitle').html(dimgtitle);
   };\n";
   drupal_add_js($js,'inline');  
   
