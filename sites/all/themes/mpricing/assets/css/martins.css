@@ -2947,3 +2947,116 @@ height:16px;
 {
 	clear:both;
 }
+#martins-planner-music-form #edit-event-music .form-item-event-music
+{
+	clear:both;
+	border:none;
+	margin-left:50px;
+	font-size:14px;
+	height:30px;	
+}
+#martins-planner-music-form .view-footer,#martins-planner-beverage-form .view-footer
+{
+	border-top:3px solid #E6E5E0;
+}
+#edit-event-music .form-item-event-music .option
+{
+	margin-top:4px;
+}
+.sidebar-entrees .content img.mainimg
+{
+	display:inline;
+}
+.sidebar-entrees .content img.mainimg
+{
+	width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;
+}
+.flickrclass
+{
+ cursor:pointer;
+
+}
+.music1_row 
+{
+	display:none;
+}
+.music1_row #music_img
+{
+	width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;
+}
+.sidebar-block-music
+{
+	width:310px;
+	float:left;
+	margin-left:20px;
+}
+.sidebar-block-music .content img
+{
+	width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;
+}
+#martins-planner-beverage-form .form-item-event-beverage
+{
+	clear:both;
+	border:none;
+	margin-top:0px !important;
+	margin-bottom:0px !important;
+}
+#martins-planner-beverage-form label
+{
+	float:none !important;
+	display:inline !important;
+}
+#martins-planner-beverage-form #edit-event-beverage
+{
+	margin-left:50px;
+}
+.form-item-event-beverage #edit-event-beverage-25, .form-item-event-beverage #edit-event-beverage-26, .form-item-event-beverage #edit-event-beverage-27
+{
+	margin-left:25px;
+}
+#martins-planner-beverage-form .form-item-event-beverage label.option
+{
+	font-weight:normal;
+}
+.sidebar-block-beverage
+{
+	width:310px;
+	float:left;
+	margin-left:5px;
+}
+.sidebar-block-beverage #tax_img img
+{
+	width:282px;
+	height:220px;
+	padding:5px;
+	border: 5px solid #FFFFFF;
+    box-shadow: 0 0 3px #999999;
+}
+#tax_title
+{
+	font-weight:bold;
+}
+.tax_row
+{
+	display:none;
+}
+.form-item-event-beverage input#edit-event-beverage-32
+{
+	visibility:hidden;
+}
+#martins-planner-beverage-form .form-item-event-beverage
+{
+	padding:10px !important;
+}

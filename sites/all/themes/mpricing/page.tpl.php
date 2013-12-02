@@ -15,6 +15,45 @@ jQuery('.contextual-links-region .content #welcomepageid').append(page_image_tit
 jQuery('.contextual-links-region .content #welcomepageid').append(page_image_desc);
 jQuery("#martins-planner-options-form .flickrgallery-image").colorbox({ width:"650px", height:"80%"});
 //jQuery('#content-messages').delay(15000).fadeOut();
+jQuery('#flickrgallery .flickr-wrap-image a').removeClass('cboxElement').addClass( "flickrclass" );
+jQuery('#flickrgallery .flickr-wrap-image a').click(function() {
+var hreff = jQuery(this).attr('href');
+var title = jQuery(this).attr('title');
+jQuery(this).removeAttr("href");
+jQuery('.sidebar-entrees .content .mainimg').attr('src',hreff);
+jQuery('.sidebar-entrees .content #cakes_title').html(title);
+
+});
+
+jQuery('.form-item-event-music .form-radio').click(function() {
+	var mid = jQuery(this).val();
+	var misicimg = jQuery('#music_'+mid).html();
+	jQuery('.sidebar-block-music .content').html(misicimg);
+});
+
+jQuery( "#martins-planner-beverage-form #edit-event-beverage .form-radio" ).each(function() {
+var checkval = jQuery(this).attr('checked');
+//alert(checkval);
+if(checkval=='checked' || checkval==true)
+{
+	var id = jQuery(this).attr('value');
+	var b = jQuery('#tax_'+id).html();
+	jQuery('.sidebar-block-beverage .content').html(b);
+}
+});
+
+jQuery('#martins-planner-beverage-form #edit-event-beverage .form-radio').click(function() {
+var taxId = jQuery(this).attr('value');
+var beverage = jQuery('#tax_'+taxId).html();
+//alert(taxId);
+jQuery('.sidebar-block-beverage .content').html(beverage);
+
+
+});
+
+//jQuery('#quicktabs-cakes #flickrgallery .flickr-wrap-image a').removeAttr("href");
+
+
 
 });
 </script>
@@ -34,7 +73,10 @@ jQuery("#martins-planner-options-form .flickrgallery-image").colorbox({ width:"6
         )); ?>
     </nav>
   <?php endif; ?>
-
+<?php 
+$current_path = $_GET['q'];	 $str=explode('/', request_uri()); 
+$new_str = explode('?', $str[2]);
+?>
 <div class="container" id="main">
   <div id="content" class="clearfix">
 
@@ -44,8 +86,24 @@ jQuery("#martins-planner-options-form .flickrgallery-image").colorbox({ width:"6
       <div class="tabs">
         <?php print render($tabs); ?>
       </div>
-
-      <?php print render($page['content']); ?>
+      <?php print render($page['content']); 
+	  if((in_array('beverages', $str)  || in_array('beverages', $new_str)) && ($user->uid)) {
+	  $terms = taxonomy_get_tree(6);
+	  	foreach($terms as $t)
+		{
+		  $term = taxonomy_term_load($t->tid);
+		  echo '<div id="tax_'.$term->tid.'" class="tax_row">
+						<div id="tax_img"><img src="'.image_style_url('medium', $term->field_beverage_image['und'][0]['filename']).'"></div>
+						<div id="tax_wrap">
+						<div id="tax_title">'.$term->field_beverage_image_title['und'][0]['value'].'</div>
+						<div id="tax_desc">'.$term->field_beverage_image_desc['und'][0]['value'].'</div>
+						</div>
+				</div>';
+		}		
+		 // print_r($term);
+	  
+	  }
+	  ?>
     </div>
   </div><!-- /end -->
 
