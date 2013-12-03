@@ -51,6 +51,7 @@ jQuery('.sidebar-block-beverage .content').html(beverage);
 
 });
 
+jQuery("#p-table-wrap .p-row .c2 select#etype").attr('disabled',true);
 //jQuery('#quicktabs-cakes #flickrgallery .flickr-wrap-image a').removeAttr("href");
 
 

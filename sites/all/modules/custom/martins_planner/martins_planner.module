@@ -801,7 +801,7 @@ global $base_url;
     '#value' =>  $type_tid,
   );
   $form['type_display'] = array(
-    '#markup' => "<div id='p-table-wrap'><table id='p-table'><thead><tr class='p-row'><th>&nbsp;</th><th>Proposal 1</th><th>Proposal 2</th></tr></thead><tbody><tr class='p-row'><td class='p-label c1'>Event type:</td><td class='type_display c2'><select><option>$type_term</option><option>$description</option></select></td><td class='c3'><select><option>$type_term</option><option>$description</option></select></td></tr>"
+    '#markup' => "<div id='p-table-wrap'><table id='p-table'><thead><tr class='p-row'><th>&nbsp;</th><th>Proposal 1</th><th>Proposal 2</th></tr></thead><tbody><tr class='p-row'><td class='p-label c1'>Event type:</td><td class='type_display c2'><select id='etype'><option>$type_term</option><option>$description</option></select></td><td class='c3'><select><option>$type_term</option><option>$description</option></select></td></tr>"
   );
   $form['m1'] = array(
     '#markup' => "<tr class='p-row'><td class='p-label c1'>Date</td>"
@@ -827,7 +827,7 @@ global $base_url;
   );
   $form['event_timeofday_p1'] = array(
     '#type' => 'radios',
-    '#options' =>  array('0'=>'any','1'=>'AM','2'=>'PM'),
+    '#options' =>  array('0'=>'any','1'=>'Afternoon (1p - 5p)','2'=>'Evening (7:30p - 11:30p)'),
     '#required' => TRUE,
     '#default_value' => $defaults['event_timeofday'][0],
     '#description' => "",
@@ -836,7 +836,7 @@ global $base_url;
   );
   $form['event_timeofday'] = array(
     '#type' => 'radios',
-    '#options' =>  array('0'=>'any','1'=>'AM','2'=>'PM'),
+    '#options' =>  array('0'=>'any','1'=>'Afternoon (1p - 5p)','2'=>'Evening (7:30p - 11:30p)'),
     '#required' => TRUE,
     '#default_value' => $defaults['event_timeofday'][0],
     '#description' => "",
@@ -844,7 +844,7 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m2'] = array(
-    '#markup' => "<tr class='p-row'><td class='p-label c1'><img src=".$base_url."/sites/default/files/images/photo-icon.png> Location</td>"
+    '#markup' => "<tr class='p-row'><td class='p-label c1'><a href=".$base_url."/locations><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Location</td>"
   );
   $form['event_location_p1'] = array(
     '#type' => 'select',
@@ -885,7 +885,7 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m5'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Catering</th></tr><tr class='p-row'><td class='p-label c1'>Entree Level</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Catering</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/entrees-premium><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Base Package</td>"
   );
   $form['entree_level_p1'] = array(
     '#type' => 'select',
@@ -909,7 +909,7 @@ global $base_url;
   $show_com_bev = !$show_wed_bev;
 
   $form['m6'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Beverage Service</th></tr><tr class='p-row'><td class='p-label c1'>Beverage Options</td>", 
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Beverage Service</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/beverages><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Beverage Options</td>", 
     '#access' => $show_wed_bev,
   );
 
@@ -961,8 +961,11 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m7'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Displays on Arrival</th></tr><tr class='p-row'><td class='p-label c1'>Displays</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Displays on Arrival</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/displays><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Displays</td>"
   );
+  foreach($displays as $v=>$d){$term = taxonomy_term_load($v); 
+  $displays[$v] = $d.' <span>$'.$term->field_displays_price['und'][0]['value'].' /pp</span>';}
+  
   $form['event_displays_p1'] = array(
     '#type' => 'checkboxes',
     '#options' =>  $displays,
@@ -981,8 +984,11 @@ global $base_url;
 
   );
   $form['m8'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Hors D'Oeuvres</th></tr><tr class='p-row'><td class='p-label c1'>Hors D'Oeuvres</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Hors D'Oeuvres</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/hors-doeuvres><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Hors D'Oeuvres</td>"
   );
+  foreach($hdo as $v=>$h){$term = taxonomy_term_load($v); 
+  $hdo[$v] = $h.' <span>$'.$term->field_hors_dovers_price['und'][0]['value'].' /pp</span>';}
+  
   $form['event_hdo_p1'] = array(
     '#type' => 'checkboxes',
     '#options' =>  $hdo,
@@ -1000,8 +1006,11 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m9'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th>Hall Rental</th><th class='p-table-highlight'>Included</th><th class='p-table-highlight'>Included</th></tr><tr class='p-row'><td></td><td></td><td></td></tr><tr class='p-row p-row-header'><th colspan='3'>Music</th></tr><tr class='p-row'><td class='p-label c1'>Music</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th>Hall Rental</th><th class='p-table-highlight'>Included</th><th class='p-table-highlight'>Included</th></tr><tr class='p-row'><td></td><td></td><td></td></tr><tr class='p-row p-row-header'><th colspan='3'>Music</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/music><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Music</td>"
   );
+  foreach($music as $v=>$m){$term = node_load($v); 
+  $music[$v] = $m.' <span>$'.$term->field_price['und'][0]['value'].' /pp</span>';}
+  
   $form['event_music_p1'] = array(
     '#type' => 'checkboxes',
     '#options' =>  $music,
@@ -1019,8 +1028,11 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m12'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Event Cake</th></tr><tr class='p-row'><td class='p-label c1'>Cake</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Event Cake</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/cakes><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Cake</td>"
   );
+  foreach($cakes as $v=>$c){$term = node_load($v); 
+  $cakes[$v] = $c.' <span>$'.$term->field_price['und'][0]['value'].' /pp</span>';}
+  
   $form['event_cakes_p1'] = array(
     '#type' => 'checkboxes',
     '#options' =>  $cakes,
@@ -1038,8 +1050,11 @@ global $base_url;
     '#suffix' => '</td></tr>'
   );
   $form['m10'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Options</th></tr><tr class='p-row'><td class='p-label c1'>Options</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Options</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/options><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Options</td>"
   );
+  foreach($other_options as $v=>$o){$term = node_load($v); 
+  $other_options[$v] = $o.' <span>$'.$term->field_price['und'][0]['value'].' /pp</span>';}
+  
   $form['event_options_p1'] = array(
     '#type' => 'checkboxes',
     '#options' =>  $other_options,

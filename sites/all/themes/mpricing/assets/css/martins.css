@@ -3060,3 +3060,15 @@ height:16px;
 {
 	padding:10px !important;
 }
+#p-table-wrap input[type="radio"]
+{
+
+	background: url("../../images/formelements.png") no-repeat scroll -29px -4px rgba(0, 0, 0, 0) !important;
+	display:block;
+	height:18px;
+	width:18px;
+}
+.p-row .c2 label span, .p-row .c3 label span
+{
+	float:right;
+}
