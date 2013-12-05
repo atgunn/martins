@@ -3072,3 +3072,45 @@ height:16px;
 {
 	float:right;
 }
+#martins-planner-beverage-form span
+{
+	font-size:14px;
+	margin-left:15px;
+}
+#martins-planner-beverage-form .type-fieldset1
+{
+	float:left;
+	width:100%;
+}
+#martins-planner-beverage-form .type-fieldset1 label
+{
+	float:left;
+	margin-left:50px;
+}
+#martins-planner-beverage-form .type-fieldset1 .form-type-select
+{
+	float:right;
+	margin:-20px 150px 0 0;
+	
+}
+.p-row .c2 input[type="radio"]#edit-event-bev-level-p1-32
+{
+	visibility:hidden;
+}
+.p-row .c2 #edit-event-bev-level-p1-25, .p-row .c2 #edit-event-bev-level-p1-26, .p-row .c2 #edit-event-bev-level-p1-27
+{
+	margin-left:20px;
+}
+.p-row .c3 input[type="radio"]#edit-event-bev-level-32
+{
+	visibility:hidden;
+}
+.p-row .c3 #edit-event-bev-level-25, .p-row .c3 #edit-event-bev-level-26, .p-row .c3 #edit-event-bev-level-27
+{
+	margin-left:20px;
+}
+#martins-planner-form .c2 label, #martins-planner-form .c3 label
+{
+	font-weight:normal;
+	font-size:14px;
+}

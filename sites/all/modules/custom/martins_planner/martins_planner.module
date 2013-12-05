@@ -311,9 +311,10 @@ function martins_planner_entree_form_submit($form, &$form_state)
 }
 function martins_planner_beverage_form($form, &$form_state)
 {
+	$numbers_a = array(1=> 'st', 2=> 'nd',3=> 'rd', 4=> 'th' );
   $taxes = martins_planner_list_taxonomies();
   $default = isset($_SESSION['mpricing']['event_beverage']) ? $_SESSION['mpricing']['event_beverage'][0] : 0;
-  if ($_SESSION['mpricing']['event_type'] == 9 )
+  if ($_SESSION['mpricing']['event_type'][0] == 9 )
   {
     $levels = array(
       '1' => 'One Hour',
@@ -323,22 +324,65 @@ function martins_planner_beverage_form($form, &$form_state)
       '5' => 'Five Hours',
     );
     $form['type_display'] = array(
-      '#markup' => "<label>Select Your Open Bar duration</label>"
+      '#markup' => "<label style='padding-bottom:25px; clear:both;'>Select Your Open Bar duration</label><br/><br/>"
     );
   }
   else
   {
     $form['type_display'] = array(
-      '#markup' => "<label>Select Your Beverage Level</label>"
+      '#markup' => "<label>Select Your Beverage Level </label><span>(Pricing based on 4-hour beverage service)</span>"
     );
     $levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+	foreach($levels as $v=>$l){
+	
+	$nodeQuery = new EntityFieldQuery();
+		$entities = $nodeQuery->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $_SESSION['mpricing']['event_location'][0],'=')            ->fieldCondition('field_beverage_level', 'tid', $v,'=')    
+			->fieldCondition('field_type', 'tid', $_SESSION['mpricing']['event_type'][0],'=')    
+			->execute();
+	//echo '<pre>'; print_r($entities['node']); echo '</pre>';
+		foreach($entities['node'] as $v1=>$nid)
+		{
+			$term = node_load($v1); 
+		}
+		$levels[$v] = $l.' <span>$'.$term->field_price['und'][0]['value'].' /pp</span>';
+	}
+	
   }
-
+  if ($_SESSION['mpricing']['event_type'][0] == 9 )
+  {
+  $defaultb[1] = isset($_SESSION['mpricing']['event_beverage1']) ? $_SESSION['mpricing']['event_beverage1'][0] : 0;
+  $defaultb[2] = isset($_SESSION['mpricing']['event_beverage2']) ? $_SESSION['mpricing']['event_beverage2'][0] : 0;
+  $defaultb[3] = isset($_SESSION['mpricing']['event_beverage3']) ? $_SESSION['mpricing']['event_beverage3'][0] : 0;
+  $default[4] = isset($_SESSION['mpricing']['event_beverage4']) ? $_SESSION['mpricing']['event_beverage4'][0] : 0;
+  
+  $levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+	for($i=1; $i<5;$i++)
+    {	
+	
+	  $form['event_beverage'.$i] = array(
+		'#type' => 'select',
+		'#options' =>  $levels,
+		'#default_value'=> $defaultb[$i],
+		'#prefix' => '<div class="type-fieldset1"><label>'.$i.$numbers_a[$i].' Hour </label>',
+		'#suffix' => '</div>'
+	  );
+	}  
+  
+  }
+  else if ($_SESSION['mpricing']['event_type'][0] == 8 )
+  {
+  
   $form['event_beverage'] = array(
     '#type' => 'radios',
     '#options' =>  $levels,
     '#default_value'=> $default,
   );
+  
+  }
+  
   $form['btn-container1'] = array(
     '#markup' => "<div class='view-footer'><p class='k-form-right prev-next'>"
   );
@@ -884,8 +928,25 @@ global $base_url;
     '#prefix' => '<td class=c3>',
     '#suffix' => '</td></tr>'
   );
+  
+  $nq = new EntityFieldQuery();
+		$ent = $nq->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'entree_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $_SESSION['mpricing']['event_location'][0],'=')            ->fieldCondition('field_entree_level', 'tid', 10,'=')    
+			->fieldCondition('field_type', 'tid', $_SESSION['mpricing']['event_type'][0],'=')    
+			->execute();
+		//echo '<pre>'; print_r($ent['node']); echo '</pre>';
+		foreach($ent['node'] as $v1=>$nid)
+		{
+			$term = node_load($v1); 
+		}
+		$base_price1 = $term->field_price['und'][0]['value'];	
   $form['m5'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Catering</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/entrees-premium><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Base Package</td>"
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Catering</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/entrees-premium><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Base Package</td><td class='c2'>$".$base_price1." per person</td><td class='c3'>$".$base_price1." per person</td>"
+  );
+  $form['m51'] = array(
+    '#markup' => "<tr class='p-row'><td class='p-label c1'><a href=".$base_url."/entrees-premium><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Upgrade</td>"
   );
   $form['entree_level_p1'] = array(
     '#type' => 'select',
@@ -915,7 +976,7 @@ global $base_url;
 
   $form['event_bev_level_p1'] = array(
     '#access' => $show_wed_bev,
-    '#type' => 'select',
+    '#type' => 'radios',
     '#options' =>  $bev_levels,
     '#required' => FALSE,
     '#default_value' => $defaults['event_beverage'][0],
@@ -924,7 +985,7 @@ global $base_url;
   );
   $form['event_bev_level'] = array(
     '#access' => $show_wed_bev,
-    '#type' => 'select',
+    '#type' => 'radios',
     '#options' =>  $bev_levels,
     '#required' => FALSE,
     '#default_value' => $defaults['event_beverage'][0],
@@ -932,8 +993,36 @@ global $base_url;
     '#suffix' => '</td>'
   );
   $form['m11'] = array(
-    '#markup' => "<tr class='p-row'><td class='p-label c1'>Beverage Options</td>", 
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Beverage Service - 4hrs</th></tr><tr class='p-row'><td class='p-label c1'>Beverage Options</td><td class='c2'>", 
     '#access' => $show_com_bev,
+  );
+  
+  $numbers_a = array(1=> 'st', 2=> 'nd',3=> 'rd', 4=> 'th' );
+  
+  if ($_SESSION['mpricing']['event_type'][0] == 9 )
+  {
+  $defaultb[1] = isset($_SESSION['mpricing']['event_beverage1']) ? $_SESSION['mpricing']['event_beverage1'][0] : 0;
+  $defaultb[2] = isset($_SESSION['mpricing']['event_beverage2']) ? $_SESSION['mpricing']['event_beverage2'][0] : 0;
+  $defaultb[3] = isset($_SESSION['mpricing']['event_beverage3']) ? $_SESSION['mpricing']['event_beverage3'][0] : 0;
+  $default[4] = isset($_SESSION['mpricing']['event_beverage4']) ? $_SESSION['mpricing']['event_beverage4'][0] : 0;
+  
+  $levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+	for($i=1; $i<5;$i++)
+    {	
+	
+	  $form['event_bev_hours_p1'.$i] = array(
+	  	'#access' => $show_com_bev,
+		'#type' => 'select',
+		'#options' =>  $levels,
+		'#default_value'=> $defaultb[$i],
+		'#prefix' => '<div class="adb"><label>'.$i.$numbers_a[$i].' Hour </label>',
+		'#suffix' => '</div>'
+	  );
+	}  
+  
+  }
+  $form['m111'] = array(
+    '#markup' => "</td><td class='c3'>" 
   );
   $hours = array(
     '1' => 'One Hour',
@@ -942,7 +1031,7 @@ global $base_url;
     '4' => 'Four Hours',
     '5' => 'Five Hours',
   );
-  $form['event_bev_hours_p1'] = array(
+  /*$form['event_bev_hours_p1'] = array(
     '#access' => $show_com_bev,
     '#type' => 'radios',
     '#options' =>  $hours,
@@ -950,16 +1039,42 @@ global $base_url;
     '#default_value' => 1,
     '#prefix' => '<td class=c2>',
     '#suffix' => '</td>'
-  );
-  $form['event_bev_hours'] = array(
+  );*/
+  
+  
+  if ($_SESSION['mpricing']['event_type'][0] == 9 )
+  {
+  
+  
+  $levels = martins_planner_load_taxonomy($taxes['wedding_beverage_level']['vid']);
+	for($i=1; $i<5;$i++)
+    {	
+	
+	  $form['event_bev_hours'.$i] = array(
+	  	'#access' => $show_com_bev,
+		'#type' => 'select',
+		'#options' =>  $levels,
+		'#prefix' => '<div class="adb"><label>'.$i.$numbers_a[$i].' Hour </label>',
+		'#suffix' => '</div>'
+	  );
+	}  
+  
+  }
+  /*$form['event_bev_hours'] = array(
     '#access' => $show_com_bev,
     '#type' => 'radios',
     '#options' =>  $hours,
     '#required' => FALSE,
     '#default_value' => 1,
-    '#prefix' => '<td class=c3>',
+    '#prefix' => '</td><td class=c3>',
     '#suffix' => '</td></tr>'
+  );*/
+  
+  $form['m112'] = array(
+    '#markup' => "</td></tr>" 
   );
+  
+  
   $form['m7'] = array(
     '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Displays on Arrival</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/displays><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Displays</td>"
   );
@@ -1124,11 +1239,24 @@ function martins_planner_form_validate($form, &$form_state)
 }
 function martins_planner_form_submit($form, &$form_state)
 {
-
+//echo '<pre>'; print_r($form_state); echo '</pre>'; die('jj');
   $type = $form_state['values']['event_type'];
   
   $proposal['type'] = $type;
   $proposal['location'] = $form_state['values']['event_location'];
+  $nq = new EntityFieldQuery();
+		$ent = $nq->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'entree_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_entree_level', 'tid', 10,'=')    
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent['node'] as $v1=>$nid)
+		{
+			$term = node_load($v1); 
+		}
+  $proposal['entree_level_basep'] = $term->field_price['und'][0]['value'];
   $proposal['entree_level'] = $form_state['values']['entree_level'];
   $proposal['count'] = $form_state['values']['event_count'];
   $proposal['date'] = $form_state['values']['event_date'];
@@ -1139,7 +1267,11 @@ function martins_planner_form_submit($form, &$form_state)
   }
   else
   {
-    $proposal['event_bev_hours'] = $form_state['values']['event_bev_hours'];
+  	$proposal['event_bev_hours1'] = $form_state['values']['event_bev_hours1'];
+	$proposal['event_bev_hours2'] = $form_state['values']['event_bev_hours2'];
+	$proposal['event_bev_hours3'] = $form_state['values']['event_bev_hours3'];
+	$proposal['event_bev_hours4'] = $form_state['values']['event_bev_hours4'];
+    /*$proposal['event_bev_hours'] = $form_state['values']['event_bev_hours'];*/
   }
   foreach($form_state['values']['event_displays'] as $key=>$value)
   {
@@ -1162,6 +1294,7 @@ function martins_planner_form_submit($form, &$form_state)
     if ($value) $proposal['options'][] = $value;
   }
  $price = martins_planner_calculate_pricing($proposal);
+ 
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
@@ -1178,7 +1311,20 @@ function martins_planner_form_submit($form, &$form_state)
 
   $p1['type'] = $type;
   $p1['location'] = $form_state['values']['event_location_p1'];
+  $nq1 = new EntityFieldQuery();
+		$ent1 = $nq1->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'entree_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $p1['location'],'=')
+			->fieldCondition('field_entree_level', 'tid', 10,'=')    
+			->fieldCondition('field_type', 'tid', $p1['type'],'=')    
+			->execute();
+		foreach($en1t1['node'] as $v1=>$nid)
+		{
+			$term1 = node_load($v1); 
+		}
   $p1['entree_level'] = $form_state['values']['entree_level_p1'];
+  $p1['entree_level_base'] = $term1->field_price['und'][0]['value'];
   $p1['count'] = $form_state['values']['event_count_p1'];
   $p1['date'] = $form_state['values']['event_date_p1'];
   $p1['tod'] = $form_state['values']['event_timeofday_p1'];
@@ -1189,7 +1335,12 @@ function martins_planner_form_submit($form, &$form_state)
   }
   else
   {
-    $p1['event_bev_hours'] = $form_state['values']['event_bev_hours_p1'];
+  	$p1['event_bev_hours_p11'] = $form_state['values']['event_bev_hours_p11'];
+	$p1['event_bev_hours_p12'] = $form_state['values']['event_bev_hours_p12'];
+	$p1['event_bev_hours_p13'] = $form_state['values']['event_bev_hours_p13'];
+	$p1['event_bev_hours_p14'] = $form_state['values']['event_bev_hours_p14'];
+	
+    /*$p1['event_bev_hours'] = $form_state['values']['event_bev_hours_p1'];*/
   }
   foreach($form_state['values']['event_displays_p1'] as $key=>$value)
   {
@@ -1215,6 +1366,10 @@ function martins_planner_form_submit($form, &$form_state)
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
+
+ //echo 'total price: '.$price;
+ //echo '<pre>'; print_r($p1); echo '</pre>';
+ //die('here');
 
  $form_state['values']['price_display_p1'] = '<p></p>';
  if ($price['discount']['amount']) $form_state['values']['price_display_p1'] = "Discount: " . 
