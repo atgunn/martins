@@ -1078,8 +1078,8 @@ global $base_url;
   $form['m7'] = array(
     '#markup' => "<tr class='p-row p-row-header'><th colspan='3'>Displays on Arrival</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/displays><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Displays</td>"
   );
-  foreach($displays as $v=>$d){$term = taxonomy_term_load($v); 
-  $displays[$v] = $d.' <span>$'.$term->field_displays_price['und'][0]['value'].' /pp</span>';}
+  foreach($displays as $vv1=>$d){$term = taxonomy_term_load($vv1); 
+  $displays[$vv1] = $d.' <span>$'.$term->field_displays_price['und'][0]['value'].' /pp</span>';}
   
   $form['event_displays_p1'] = array(
     '#type' => 'checkboxes',
@@ -1124,7 +1124,7 @@ global $base_url;
     '#markup' => "<tr class='p-row p-row-header'><th>Hall Rental</th><th class='p-table-highlight'>Included</th><th class='p-table-highlight'>Included</th></tr><tr class='p-row'><td></td><td></td><td></td></tr><tr class='p-row p-row-header'><th colspan='3'>Music</th></tr><tr class='p-row'><td class='p-label c1'><a href=".$base_url."/music><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Music</td>"
   );
   foreach($music as $v=>$m){$term = node_load($v); 
-  $music[$v] = $m.' <span>$'.$term->field_price['und'][0]['value'].' /pp</span>';}
+  $music[$v] = $m.' <span>$'.$term->field_price['und'][0]['value'].' /per event</span>';}
   
   $form['event_music_p1'] = array(
     '#type' => 'checkboxes',
@@ -1256,7 +1256,7 @@ function martins_planner_form_submit($form, &$form_state)
 		{
 			$term = node_load($v1); 
 		}
-  $proposal['entree_level_basep'] = $term->field_price['und'][0]['value'];
+  $proposal['entree_level_base'] = $term->field_price['und'][0]['value'];
   $proposal['entree_level'] = $form_state['values']['entree_level'];
   $proposal['count'] = $form_state['values']['event_count'];
   $proposal['date'] = $form_state['values']['event_date'];
@@ -1319,7 +1319,7 @@ function martins_planner_form_submit($form, &$form_state)
 			->fieldCondition('field_entree_level', 'tid', 10,'=')    
 			->fieldCondition('field_type', 'tid', $p1['type'],'=')    
 			->execute();
-		foreach($en1t1['node'] as $v1=>$nid)
+		foreach($ent1['node'] as $v1=>$nid)
 		{
 			$term1 = node_load($v1); 
 		}
@@ -1363,20 +1363,21 @@ function martins_planner_form_submit($form, &$form_state)
     if ($value) $p1['options'][] = $value;
   }
  $price = martins_planner_calculate_pricing($p1);
+// die('plan1');
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
-
+ 
  //echo 'total price: '.$price;
  //echo '<pre>'; print_r($p1); echo '</pre>';
  //die('here');
 
  $form_state['values']['price_display_p1'] = '<p></p>';
- if ($price['discount']['amount']) $form_state['values']['price_display_p1'] = "Discount: " . 
-  $price['discount']['description'] . " (" . $price['discount']['amount'] . "%)";
+ /*if ($price['discount']['amount']) $form_state['values']['price_display_p1'] = "Discount: " . 
+  $price['discount']['description'] . " (" . $price['discount']['amount'] . "%)";*/
 
  $form_state['values']['price_display_p1'] .= "<div>Price per person: $ $ppp<div>";
- if ($price['ppe']['total']) $form_state['values']['price_display_p1'] .= "<div>Price per event: $ $ppe<div>";
+ if ($price['ppe']['total']) $form_state['values']['price_display_p1'] .= "<div>Music Price per event: $ $ppe<div>";
  $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests: $ $gt<div>";
 
 
@@ -1385,22 +1386,122 @@ function martins_planner_calculate_pricing($proposal)
 {
   $ppp = 0;
   $matrix_full = martins_planner_pricing_matrix();
+//  echo '<pre>';print_r($proposal); echo '</pre>';
   $prices = array();
   $type = $proposal['type'];
   $location = $proposal['location'];
   $matrix = $matrix_full[$proposal[type]] [$proposal[location]] ;
   //dsm($matrix);
-  //dsm($proposal);
   $prices['discount'] = martins_planner_get_discount($proposal['date'], $proposal['tod']);
   $prices['discount']['pct'] = 1;
   if ($prices['discount']['amount']) $prices['discount']['pct'] = 1 - $prices['discount']['amount'] /100;
-  //dsm($prices['discount']);
-  //entree base + level
+  
   $base_price = $matrix['entree_price']['base_price'];
   $base_tid = $matrix['entree_price']['base_tid'];
+  
+  $prices['ppp']['entree_level_base'] = $proposal['entree_level_base'];
+	$nq11 = new EntityFieldQuery();
+		$ent11 = $nq11->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'entree_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_entree_level', 'tid',$proposal[entree_level],'=')    
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent11['node'] as $v11=>$nid)
+		{
+			$term11 = node_load($v11); 
+		}
+	$prices['ppp']['entree']= $term11->field_price['und'][0]['value'];	
+//echo 'entry_value_price:'.$term11->field_price['und'][0]['value'];	
+if ($type == 8)
+  {
+  $nq12 = new EntityFieldQuery();
+		$ent12 = $nq12->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_beverage_level', 'tid',$proposal[event_bev_level],'=')    
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent12['node'] as $v12=>$nid)
+		{
+			$term12 = node_load($v12); 
+		}
+    $prices['ppp']['beverage'] = $term12->field_price['und'][0]['value'];	
+  }
+  else
+  {
+    $prices['ppp']['beverage'] = 0;
+    $max_hours = $proposal['event_bev_hours'];
+	$nq13 = new EntityFieldQuery();
+		$ent13 = $nq13->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			/*->fieldCondition('field_beverage_level', 'tid',$proposal[event_bev_hours_p11],'=')*/
+			->fieldCondition('field_hours', 'value',1,'=')    
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent13['node'] as $v13=>$nid)
+		{
+			$term13 = node_load($v13); 
+		}
+	
+	$hour1 = $term13->field_price['und'][0]['value'];	
+	$nq14= new EntityFieldQuery();
+		$ent14 = $nq14->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_hours', 'value',2,'=')    
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent14['node'] as $v14=>$nid)
+		{
+			$term14 = node_load($v14); 
+		}
+	$hour2 = $term14->field_price['und'][0]['value'];	
+	$nq15 = new EntityFieldQuery();
+		$ent15 = $nq15->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_hours', 'value',3,'=')     
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent15['node'] as $v15=>$nid)
+		{
+			$term15 = node_load($v15); 
+		}
+	$hour3 = $term15->field_price['und'][0]['value'];	
+	$nq16 = new EntityFieldQuery();
+		$ent16 = $nq16->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'beverage_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_hours', 'value',3,'=')     
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($ent16['node'] as $v16=>$nid)
+		{
+			$term16 = node_load($v16); 
+		}
+	$hour4 = $term16->field_price['und'][0]['value'];	
+			
+    /*for ($h = 1; $h <= 4; $h++)
+    {
+      $prices['ppp']['beverage'] += $matrix['beverage_price'][$h];
+    }
+    $prices['ppp']['beverage'] = $prices['discount']['pct'] * $prices['ppp']['beverage'];*/
+	$prices['ppp']['beverage'] = $hour1 + $hour2 + $hour3 + $hour4;
+  }
+ 
+
+
 
   //base price, discount applied
-  if ($base_tid == $proposal['entree_level'])
+  /*if ($base_tid == $proposal['entree_level'])
   {
     $prices['ppp']['entree'] = $base_price * $prices['discount']['pct'];
   }
@@ -1408,7 +1509,6 @@ function martins_planner_calculate_pricing($proposal)
   {
     $prices['ppp']['entree'] = ($base_price + $matrix['entree_price'][$proposal[entree_level]]) * $prices['discount']['pct'];
   }
-  //discount on bev, too
   if ($type == 8)
   {
     $prices['ppp']['beverage'] = $matrix['beverage_price'][$proposal[event_bev_level]] * $prices['discount']['pct'];
@@ -1422,26 +1522,87 @@ function martins_planner_calculate_pricing($proposal)
       $prices['ppp']['beverage'] += $matrix['beverage_price'][$h];
     }
     $prices['ppp']['beverage'] = $prices['discount']['pct'] * $prices['ppp']['beverage'];
-  }
+  }*/
   $prices['ppp']['displays'] = 0;
   $prices['ppp']['hdo'] = 0;
   $prices['ppe']['music'] = 0;
   $prices['ppp']['cakes'] = 0;
-  foreach ($proposal['displays'] as $tid)
+  $prices['ppp']['options'] = 0;
+  foreach ($proposal['displays'] as $tid17=>$value17)
   {
-    $prices['ppp']['displays'] += $matrix['display_price'][$tid];
+  	$nqdis = new EntityFieldQuery();
+		$entdis = $nqdis->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'display_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_option_display', 'tid',$value17,'=')     
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($entdis['node'] as $v17=>$nid)
+		{
+			$term17 = node_load($v17); 
+		}
+		$prices['ppp']['displays'] += $term17->field_price['und'][0]['value'];
+    /*$prices['ppp']['displays'] += $matrix['display_price'][$tid];*/
   }
-  foreach ($proposal['hdo'] as $tid)
+  
+  foreach ($proposal['hdo'] as $tid18=>$value18)
   {
-    $prices['ppp']['hdo'] += $matrix['hdo_price'][$tid];
+  		$nqhdo = new EntityFieldQuery();
+		$enthdo = $nqhdo->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'hdo_price') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_option_hod', 'tid',$value18,'=')     
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')    
+			->execute();
+		foreach($enthdo['node'] as $v18=>$nid)
+		{
+			$term18 = node_load($v18); 
+		}
+	//	echo 'hdo_price: '.$term18->field_price['und'][0]['value'];
+		$prices['ppp']['hdo'] += $term18->field_price['und'][0]['value'];
+    /*$prices['ppp']['hdo'] += $matrix['hdo_price'][$tid];*/
   }
-  foreach ($proposal['cakes'] as $tid)
+  
+  foreach ($proposal['cakes'] as $tid19=>$value19)
   {
-    $prices['ppp']['cakes'] += $matrix['cake_price'][$tid]['price'];
+  		$nqcake = new EntityFieldQuery();
+		$entcake = $nqcake->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'cake_price') 
+			->propertyCondition('status', 1) 
+			/*->fieldCondition('field_location', 'tid', $proposal['location'],'=')
+			->fieldCondition('field_option_hod', 'tid',$value19,'=')     
+			->fieldCondition('field_type', 'tid', $proposal['type'],'=')  */  
+			->execute();
+		foreach($entcake['node'] as $v19=>$nid)
+		{
+			$term19 = node_load($v19); 
+		}
+	//	echo 'cake_price: '.$term19->field_price['und'][0]['value'];
+		$prices['ppp']['cakes'] += $term19->field_price['und'][0]['value'];
+    /*$prices['ppp']['cakes'] += $matrix['cake_price'][$tid]['price'];*/
   }
-  foreach ($proposal['music'] as $tid)
+  foreach ($proposal['options'] as $tid10=>$value10)
   {
-    $prices['ppe']['music'] += $matrix['music_price'][$tid]['price'];
+  		$nqoptions = new EntityFieldQuery();
+		$entoptions = $nqoptions->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'option_price') 
+			->propertyCondition('status', 1) 
+			->execute();
+		foreach($entoptions['node'] as $v10=>$nid)
+		{
+			$term10 = node_load($v10); 
+		}
+		$prices['ppp']['options'] += $term10->field_price['und'][0]['value'];
+    /*$prices['ppe']['options'] += $matrix['music_price'][$tid]['price'];*/
+  }
+//  die('cc');
+  foreach ($proposal['music'] as $tid21=>$value21)
+  {
+		$term21 = node_load($value21); 
+		$prices['ppe']['music'] += $term21->field_price['und'][0]['value'];
+    /*$prices['ppe']['music'] += $matrix['music_price'][$tid]['price'];*/
   }
   $ppp = 0;
   foreach($prices['ppp'] as $p)
@@ -1457,6 +1618,7 @@ function martins_planner_calculate_pricing($proposal)
   $prices['ppe']['total'] = $ppe;
   $prices['grand_total'] = ($ppp * $proposal['count']) + $ppe;
   //dsm($prices);
+//  echo '<pre>'; print_r($prices); echo '</pre>';die('cc');
   return $prices;
 }
 function martins_planner_load_taxonomy($tid)
@@ -1589,9 +1751,13 @@ function martins_planner_pricing_matrix()
                     ->propertyCondition('status', 1)
                     ->entityCondition('bundle', $cts,'in')
                     ->execute();
+					
+// echo 'sss<pre>'; print_r($entities);	 echo '</pre>';				
   if (isset($entities['node'])) $nodes = node_load_multiple(array_keys($entities['node']));
   if ($nodes)
   {
+//  echo '<pre>'; print_r($nodes);echo '</pre>';die();
+  
     foreach ($nodes as $node)
     {
       $type = $node->field_type['und'][0]['tid'];
@@ -1649,19 +1815,3 @@ function martins_planner_pricing_matrix()
   
   return $matrix;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
