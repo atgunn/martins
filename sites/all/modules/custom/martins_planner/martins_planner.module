@@ -1186,6 +1186,12 @@ global $base_url;
     '#prefix' => '<td class=c3>',
     '#suffix' => '</td></tr>'
   );
+  
+   $form['m14'] = array(
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='1'><a href=".$base_url."/discounts><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Discounts</th><th colspan='1'>xx /pp</th><th colspan='1'>xx /pp</th></tr>
+	<tr><td class='c1'>Service Charge</td><td class='c2'> 20%</td><td class='c3'> 20%</td></tr>"
+  );
+    
   $form['m13'] = array(
     '#markup' => "<tr class='p-row p-row-header'><th class='p-label c1 p-table-highlight'>Your Estimate</th>"
   );
@@ -1298,6 +1304,8 @@ function martins_planner_form_submit($form, &$form_state)
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
+ $service_charges = $gt *0.2; 
+ $gt_sc = $gt + $service_charges;
  $form_state['rebuild'] = TRUE;
 
  $form_state['values']['price_display'] = '<p></p>';
@@ -1307,7 +1315,7 @@ function martins_planner_form_submit($form, &$form_state)
 
  $form_state['values']['price_display'] .= "<div>Price per person: $ $ppp<div>";
  if ($price['ppe']['total']) $form_state['values']['price_display'] .= "<div>Price per event: $ $ppe<div>";
- $form_state['values']['price_display'] .= "<div>Total for " . $proposal['count'] . " Guests: $ $gt<div>";
+ $form_state['values']['price_display'] .= "<div>Total for " . $proposal['count'] . " Guests: $ $gt_sc<div>";
 
   $p1['type'] = $type;
   $p1['location'] = $form_state['values']['event_location_p1'];
@@ -1367,7 +1375,8 @@ function martins_planner_form_submit($form, &$form_state)
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
- 
+ $service_charges = $gt *0.2; 
+ $gt_sc = $gt + $service_charges;
  //echo 'total price: '.$price;
  //echo '<pre>'; print_r($p1); echo '</pre>';
  //die('here');
@@ -1378,7 +1387,7 @@ function martins_planner_form_submit($form, &$form_state)
 
  $form_state['values']['price_display_p1'] .= "<div>Price per person: $ $ppp<div>";
  if ($price['ppe']['total']) $form_state['values']['price_display_p1'] .= "<div>Music Price per event: $ $ppe<div>";
- $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests: $ $gt<div>";
+ $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests: $ $gt_sc<div>";
 
 
 }
