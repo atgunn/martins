@@ -2839,6 +2839,8 @@ height:16px;
 
 .rightsblock img#event-img{
 	float: left !important;
+	margin-top: 12px;
+	height: 230px;
 }
 
 .rightsblock #dimgtitle{

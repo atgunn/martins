@@ -1188,7 +1188,7 @@ global $base_url;
   );
   
    $form['m14'] = array(
-    '#markup' => "<tr class='p-row p-row-header'><th colspan='1'><a href=".$base_url."/discounts><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Discounts</th><th colspan='1'>xx /pp</th><th colspan='1'>xx /pp</th></tr>
+    '#markup' => "<tr class='p-row p-row-header'><th colspan='1'><a href=".$base_url."/discounts><img src=".$base_url."/sites/default/files/images/photo-icon.png></a> Discounts</th><th colspan='1'>$xx /pp</th><th colspan='1'>$xx /pp</th></tr>
 	<tr><td class='c1'>Service Charge</td><td class='c2'> 20%</td><td class='c3'> 20%</td></tr>"
   );
     
@@ -1267,6 +1267,38 @@ function martins_planner_form_submit($form, &$form_state)
   $proposal['count'] = $form_state['values']['event_count'];
   $proposal['date'] = $form_state['values']['event_date'];
   $proposal['tod'] = $form_state['values']['event_timeofday'];
+  $month = date('F',strtotime($proposal['date']));
+  $day = date('l',strtotime($proposal['date']));
+  //echo $ampm = date('A',strtotime($proposal['date']));
+  $months=array('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday');
+  if(in_array($day,$months))
+  {
+  	$nqsun = new EntityFieldQuery();
+		$entsun = $nqsun->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'discount') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_discounts', 'value', $month,'LIKE')
+			->execute();
+		foreach($entsun['node'] as $v1=>$nid)
+		{
+			$term = node_load($v1); 
+		}
+	 $proposal['discounts1'] = $term->field_sun_fri['und'][0]['value'];	
+  }
+  else
+  {
+  $nqsat = new EntityFieldQuery();
+		$entsat = $nqsat->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'discount') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_discounts', 'value', $month,'LIKE')
+			->execute();
+		foreach($entsat['node'] as $vsat=>$nid)
+		{
+			$term = node_load($vsat); 
+		}
+  $proposal['discounts1']= $term->field_saturday_pm['und'][0]['value'];	
+  }
   if ($type == 8)
   {
     $proposal['event_bev_level'] = $form_state['values']['event_bev_level'];
@@ -1304,8 +1336,9 @@ function martins_planner_form_submit($form, &$form_state)
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
  $gt = number_format($price['grand_total'],2);
- $service_charges = $gt *0.2; 
- $gt_sc = $gt + $service_charges;
+ $service_charges = $ppp * $proposal['count']*0.2; 
+ $gt_sc = $price['grand_total'] + $service_charges;
+ $gt_sc = number_format($gt_sc,2);
  $form_state['rebuild'] = TRUE;
 
  $form_state['values']['price_display'] = '<p></p>';
@@ -1315,7 +1348,7 @@ function martins_planner_form_submit($form, &$form_state)
 
  $form_state['values']['price_display'] .= "<div>Price per person: $ $ppp<div>";
  if ($price['ppe']['total']) $form_state['values']['price_display'] .= "<div>Price per event: $ $ppe<div>";
- $form_state['values']['price_display'] .= "<div>Total for " . $proposal['count'] . " Guests: $ $gt_sc<div>";
+ $form_state['values']['price_display'] .= "<div>Total for " . $proposal['count'] . " Guests including Service Charges: $ $gt_sc<div>";
 
   $p1['type'] = $type;
   $p1['location'] = $form_state['values']['event_location_p1'];
@@ -1337,6 +1370,38 @@ function martins_planner_form_submit($form, &$form_state)
   $p1['date'] = $form_state['values']['event_date_p1'];
   $p1['tod'] = $form_state['values']['event_timeofday_p1'];
 
+  $month = date('F',strtotime($p1['date']));
+  $day = date('l',strtotime($p1['date']));
+  //echo $ampm = date('A',strtotime($p1['date']));
+  $months=array('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday');
+  if(in_array($day,$months))
+  {
+  	$nqsun = new EntityFieldQuery();
+		$entsun = $nqsun->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'discount') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_discounts', 'value', $month,'LIKE')
+			->execute();
+		foreach($entsun['node'] as $v1=>$nid)
+		{
+			$term = node_load($v1); 
+		}
+	  $p1['discounts1']= $term->field_sun_fri['und'][0]['value'];	
+  }
+  else
+  {
+  $nqsat = new EntityFieldQuery();
+		$entsat = $nqsat->entityCondition('entity_type', 'node')
+			->entityCondition('bundle', 'discount') 
+			->propertyCondition('status', 1) 
+			->fieldCondition('field_discounts', 'value', $month,'LIKE')
+			->execute();
+		foreach($entsat['node'] as $vsat=>$nid)
+		{
+			$term = node_load($vsat); 
+		}
+  $p1['discounts1']= $term->field_saturday_pm['und'][0]['value'];	
+  }
   if ($type == 8)
   {
     $p1['event_bev_level'] = $form_state['values']['event_bev_level_p1'];
@@ -1370,13 +1435,15 @@ function martins_planner_form_submit($form, &$form_state)
   {
     if ($value) $p1['options'][] = $value;
   }
+  
  $price = martins_planner_calculate_pricing($p1);
-// die('plan1');
  $ppp = number_format($price['ppp']['total'],2);
  $ppe = number_format($price['ppe']['total'],2);
+ 
  $gt = number_format($price['grand_total'],2);
- $service_charges = $gt *0.2; 
- $gt_sc = $gt + $service_charges;
+ $service_charges = $ppp * $p1['count']*0.2; 
+ $gt_sc = $price['grand_total'] + $service_charges;
+ $gt_sc = number_format($gt_sc,2);
  //echo 'total price: '.$price;
  //echo '<pre>'; print_r($p1); echo '</pre>';
  //die('here');
@@ -1387,7 +1454,7 @@ function martins_planner_form_submit($form, &$form_state)
 
  $form_state['values']['price_display_p1'] .= "<div>Price per person: $ $ppp<div>";
  if ($price['ppe']['total']) $form_state['values']['price_display_p1'] .= "<div>Music Price per event: $ $ppe<div>";
- $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests: $ $gt_sc<div>";
+ $form_state['values']['price_display_p1'] .= "<div>Total for " . $p1['count'] . " Guests including Service Charges: $ $gt_sc<div>";
 
 
 }
@@ -1617,6 +1684,11 @@ if ($type == 8)
   foreach($prices['ppp'] as $p)
   {
     $ppp += $p;
+  }
+  if($proposal['discounts1'] > 0)
+  {
+  $disc = $ppp * $proposal['discounts1']/100;
+  $ppp = $ppp - $disc;
   }
   $ppe = 0;
   foreach($prices['ppe'] as $p)
